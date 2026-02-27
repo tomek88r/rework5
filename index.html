@@ -1,4 +1,4 @@
-﻿
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -328,8 +328,7 @@
       background-color: #dc3545;
       color: white;
     }
-
-    /* Komunikaty */
+  /* Komunikaty */
     .message {
       color: white;
       padding: 8px 10px;
@@ -905,311 +904,258 @@
       appId: "1:57877047412:web:68584c15ba46151eb7c921"
     };
 
-    // Inicjalizacja Firebase
     try {
       firebase.initializeApp(firebaseConfig);
     } catch (error) {
       console.log("Firebase już zainicjalizowany");
     }
     const database = firebase.database();
+// Elementy DOM
+const loginScreen = document.getElementById("loginScreen");
+const appContent = document.getElementById("appContent");
+const currentUserSpan = document.getElementById("currentUser");
+const loginError = document.getElementById("loginError");
+const barcodeInput = document.getElementById("barcode");
+const noteInput = document.getElementById("note");
+const inspectorInput = document.getElementById("inspector");
+const reworkNameInput = document.getElementById("rework-name");
+const message = document.getElementById("message");
+const list = document.getElementById("list");
+const buttons = document.getElementById("buttons");
+const fileNameDisplay = document.getElementById("file-name");
+const confirmationDialog = document.getElementById("confirmationDialog");
+const confirmationTitle = document.getElementById("confirmationTitle");
+const confirmationMessage = document.getElementById("confirmationMessage");
+const fileInputContainer = document.getElementById("fileInputContainer");
+const reworkModeBtn = document.getElementById("reworkModeBtn");
+const scanModeBtn = document.getElementById("scanModeBtn");
+const mainContent = document.getElementById("mainContent");
+const exportBtn = document.getElementById("exportBtn");
+const resetBtn = document.getElementById("resetBtn");
+const actionHeader = document.getElementById("actionHeader");
+const modeSelector = document.getElementById("modeSelector");
+const inspectorControls = document.getElementById("inspectorControls");
+const statusInfo = document.getElementById("statusInfo");
+const actionButtons = document.getElementById("actionButtons");
+const currentReworkName = document.getElementById("currentReworkName");
+const currentInspectorName = document.getElementById("currentInspectorName");
+const inspectorHeader = document.getElementById("inspectorHeader");
+const dateHeader = document.getElementById("dateHeader");
+const statusHeader = document.getElementById("statusHeader");
+const noteHeader = document.getElementById("noteHeader");
+const debugBtn = document.getElementById("debugBtn");
 
-    // Elementy DOM
-    const loginScreen = document.getElementById("loginScreen");
-    const appContent = document.getElementById("appContent");
-    const currentUserSpan = document.getElementById("currentUser");
-    const loginError = document.getElementById("loginError");
-    const barcodeInput = document.getElementById("barcode");
-    const noteInput = document.getElementById("note");
-    const inspectorInput = document.getElementById("inspector");
-    const reworkNameInput = document.getElementById("rework-name");
-    const message = document.getElementById("message");
-    const list = document.getElementById("list");
-    const buttons = document.getElementById("buttons");
-    const fileNameDisplay = document.getElementById("file-name");
-    const confirmationDialog = document.getElementById("confirmationDialog");
-    const confirmationTitle = document.getElementById("confirmationTitle");
-    const confirmationMessage = document.getElementById("confirmationMessage");
-    const fileInputContainer = document.getElementById("fileInputContainer");
-    const reworkModeBtn = document.getElementById("reworkModeBtn");
-    const scanModeBtn = document.getElementById("scanModeBtn");
-    const mainContent = document.getElementById("mainContent");
-    const exportBtn = document.getElementById("exportBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const actionHeader = document.getElementById("actionHeader");
-    const modeSelector = document.getElementById("modeSelector");
-    const inspectorControls = document.getElementById("inspectorControls");
-    const statusInfo = document.getElementById("statusInfo");
-    const actionButtons = document.getElementById("actionButtons");
-    const currentReworkName = document.getElementById("currentReworkName");
-    const currentInspectorName = document.getElementById("currentInspectorName");
-    const inspectorHeader = document.getElementById("inspectorHeader");
-    const dateHeader = document.getElementById("dateHeader");
-    const statusHeader = document.getElementById("statusHeader");
-    const noteHeader = document.getElementById("noteHeader");
-    const debugBtn = document.getElementById("debugBtn");
+// Dane aplikacji
+let reworkData = [];
+let scanData = [];
+let currentSort = { field: 'code', direction: 'asc' };
+let codeToRemove = null;
+let currentMode = 'rework';
+let tempCode = '';
+let isProcessing = false;
+let currentUser = null;
+let userRole = null;
+let selectedUserType = 'inspektor';
+let firebaseListenerActive = false;
+let confirmCallback = null; // nowy callback dla dialogu
 
-    // Dane aplikacji
-    let reworkData = [];
-    let scanData = [];
-    let currentSort = { field: 'code', direction: 'asc' };
-    let codeToRemove = null;
-    let currentMode = 'rework';
-    let tempCode = '';
-    let isProcessing = false;
-    let currentUser = null;
-    let userRole = null;
-    let selectedUserType = 'inspektor';
-    let firebaseListenerActive = false;
+// Użytkownicy i hasła
+const USERS = {
+  'inspektor': { password: 'samsung1', role: 'inspector' },
+  'status': { password: 'samsung26', role: 'status' }
+};
 
-    // Użytkownicy i hasła
-    const USERS = {
-      'inspektor': { password: 'samsung1', role: 'inspector' },
-      'status': { password: 'samsung26', role: 'status' }
+// Funkcje Firebase
+function getReworkDataPath() { return 'reworkData'; }
+function getScanDataPath() { return 'scanData'; }
+function getMetadataPath() { return 'metadata'; }
+
+let saveTimeout = null;
+let lastSaveTime = 0;
+const SAVE_DEBOUNCE = 2000;
+
+async function saveMetadataToFirebase() {
+  try {
+    const metadata = {
+      reworkName: reworkNameInput.value.trim(),
+      inspector: inspectorInput.value.trim(),
+      lastUpdate: Date.now(),
+      mode: currentMode,
+      user: currentUser
     };
+    await database.ref(getMetadataPath()).set(metadata);
+    return true;
+  } catch (error) {
+    console.error('Błąd zapisu metadanych:', error);
+    return false;
+  }
+}
 
-    // Funkcje Firebase
-    function getReworkDataPath() { return 'reworkData'; }
-    function getScanDataPath() { return 'scanData'; }
-    function getMetadataPath() { return 'metadata'; }
+async function saveReworkDataToFirebase() {
+  try {
+    await database.ref(getReworkDataPath()).set(reworkData);
+    await saveMetadataToFirebase();
+    console.log('Dane zapisane do Firebase');
+    return true;
+  } catch (error) {
+    console.error('Błąd zapisu danych:', error);
+    showMessage('Błąd zapisu do bazy danych', 'error', 3000);
+    return false;
+  }
+}
 
-    // Proste funkcje oszczędzania danych (bez kompresji - tylko podstawowe)
-    let saveTimeout = null;
-    let lastSaveTime = 0;
-    const SAVE_DEBOUNCE = 2000; // 2 sekundy
+async function saveScanDataToFirebase() {
+  try {
+    await database.ref(getScanDataPath()).set(scanData);
+    await saveMetadataToFirebase();
+    return true;
+  } catch (error) {
+    console.error('Błąd zapisu danych scan:', error);
+    showMessage('Błąd zapisu do bazy danych', 'error', 3000);
+    return false;
+  }
+}
 
-    async function saveMetadataToFirebase() {
-      try {
-        const metadata = {
-          reworkName: reworkNameInput.value.trim(),
-          inspector: inspectorInput.value.trim(),
-          lastUpdate: Date.now(),
-          mode: currentMode,
-          user: currentUser
-        };
-        
-        await database.ref(getMetadataPath()).set(metadata);
-        return true;
-      } catch (error) {
-        console.error('Błąd zapisu metadanych:', error);
-        return false;
+async function debouncedSave() {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    const now = Date.now();
+    if (now - lastSaveTime < SAVE_DEBOUNCE) return;
+    if (currentMode === 'rework') await saveReworkDataToFirebase();
+    else await saveScanDataToFirebase();
+    lastSaveTime = now;
+  }, SAVE_DEBOUNCE);
+}
+
+async function loadDataFromFirebase() {
+  try {
+    const reworkRef = database.ref(getReworkDataPath());
+    const reworkSnapshot = await reworkRef.once('value');
+    reworkData = reworkSnapshot.exists() ? reworkSnapshot.val() : [];
+
+    const scanRef = database.ref(getScanDataPath());
+    const scanSnapshot = await scanRef.once('value');
+    scanData = scanSnapshot.exists() ? scanSnapshot.val() : [];
+
+    const metadataRef = database.ref(getMetadataPath());
+    const metadataSnapshot = await metadataRef.once('value');
+    if (metadataSnapshot.exists()) {
+      const metadata = metadataSnapshot.val();
+      if (metadata) {
+        reworkNameInput.value = metadata.reworkName || '';
+        inspectorInput.value = metadata.inspector || '';
+        currentReworkName.textContent = metadata.reworkName || '-';
+        currentInspectorName.textContent = metadata.inspector || '-';
       }
     }
+    return true;
+  } catch (error) {
+    console.error('Błąd odczytu z Firebase:', error);
+    showMessage('Błąd odczytu z bazy danych', 'error', 3000);
+    return false;
+  }
+}
 
-    async function saveReworkDataToFirebase() {
-      try {
-        await database.ref(getReworkDataPath()).set(reworkData);
-        await saveMetadataToFirebase();
-        console.log('Dane zapisane do Firebase');
-        return true;
-      } catch (error) {
-        console.error('Błąd zapisu danych:', error);
-        showMessage('Błąd zapisu do bazy danych', 'error', 3000);
-        return false;
+function setupRealtimeListeners() {
+  if (firebaseListenerActive) {
+    database.ref(getReworkDataPath()).off();
+    database.ref(getScanDataPath()).off();
+    database.ref(getMetadataPath()).off();
+  }
+  database.ref(getReworkDataPath()).on('value', (snapshot) => {
+    if (snapshot.exists()) reworkData = snapshot.val() || [];
+    if (currentMode === 'rework') { renderTable(); updateStats(); }
+  });
+  database.ref(getMetadataPath()).on('value', (snapshot) => {
+    if (snapshot.exists()) {
+      const metadata = snapshot.val();
+      if (metadata) {
+        currentReworkName.textContent = metadata.reworkName || '-';
+        currentInspectorName.textContent = metadata.inspector || '-';
       }
     }
+  });
+  firebaseListenerActive = true;
+}
 
-    async function saveScanDataToFirebase() {
-      try {
-        await database.ref(getScanDataPath()).set(scanData);
-        await saveMetadataToFirebase();
-        return true;
-      } catch (error) {
-        console.error('Błąd zapisu danych scan:', error);
-        showMessage('Błąd zapisu do bazy danych', 'error', 3000);
-        return false;
-      }
+let statusRefreshInterval = null;
+function setupStatusRefresh() {
+  if (statusRefreshInterval) clearInterval(statusRefreshInterval);
+  statusRefreshInterval = setInterval(async () => {
+    await loadDataFromFirebase();
+    renderTable();
+    updateStats();
+  }, 30000);
+}
+
+// NOWA FUNKCJA DO OBSŁUGI DIALOGU Z CALLBACKIEM
+function showConfirmation(title, message, onConfirm) {
+  confirmationTitle.textContent = title;
+  confirmationMessage.textContent = message;
+  confirmCallback = onConfirm;
+  confirmationDialog.style.display = 'flex';
+}
+
+// FUNKCJA WYWOŁUJĄCA DIALOG ZMIANY STATUSU
+function promptStatusChange(code, currentStatus) {
+  const statusText = currentStatus === "OK" ? "OK" : "NG";
+  showConfirmation(
+    "Zmiana statusu",
+    `Kod został już zeskanowany. Jego status to: ${statusText}. Czy chcesz zmienić jego status?`,
+    async () => {
+      tempCode = code;
+      buttons.style.display = "flex";
+      document.body.classList.add('buttons-visible');
+      showMessage(`Wybierz nowy status dla kodu`, "info", 0);
+      noteInput.style.display = "none";
+      noteInput.disabled = true;
+      setTimeout(() => {
+        const okBtn = document.querySelector('.btn-ok');
+        if (okBtn) okBtn.focus();
+      }, 50);
     }
-
-    // Zapisz z debounce (żeby nie zapisywać za często)
-    async function debouncedSave() {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-      }
-      
-      saveTimeout = setTimeout(async () => {
-        const now = Date.now();
-        // Nie zapisuj częściej niż co 2 sekundy
-        if (now - lastSaveTime < SAVE_DEBOUNCE) {
-          return;
-        }
-        
-        if (currentMode === 'rework') {
-          await saveReworkDataToFirebase();
-        } else {
-          await saveScanDataToFirebase();
-        }
-        
-        lastSaveTime = now;
-      }, SAVE_DEBOUNCE);
-    }
-
-    async function loadDataFromFirebase() {
-      try {
-        // Załaduj dane rework
-        const reworkRef = database.ref(getReworkDataPath());
-        const reworkSnapshot = await reworkRef.once('value');
-        if (reworkSnapshot.exists()) {
-          const data = reworkSnapshot.val();
-          reworkData = data || [];
-        } else {
-          reworkData = [];
-        }
-
-        // Załaduj dane scan
-        const scanRef = database.ref(getScanDataPath());
-        const scanSnapshot = await scanRef.once('value');
-        if (scanSnapshot.exists()) {
-          const data = scanSnapshot.val();
-          scanData = data || [];
-        } else {
-          scanData = [];
-        }
-
-        // Załaduj metadane
-        const metadataRef = database.ref(getMetadataPath());
-        const metadataSnapshot = await metadataRef.once('value');
-        if (metadataSnapshot.exists()) {
-          const metadata = metadataSnapshot.val();
-          if (metadata) {
-            reworkNameInput.value = metadata.reworkName || '';
-            inspectorInput.value = metadata.inspector || '';
-            currentReworkName.textContent = metadata.reworkName || '-';
-            currentInspectorName.textContent = metadata.inspector || '-';
-          }
-        }
-
-        console.log('Załadowano dane z Firebase:', {
-          reworkCount: reworkData.length,
-          scanCount: scanData.length
-        });
-
-        return true;
-      } catch (error) {
-        console.error('Błąd odczytu z Firebase:', error);
-        showMessage('Błąd odczytu z bazy danych', 'error', 3000);
-        return false;
-      }
-    }
-
-    function setupRealtimeListeners() {
-      // Usuń poprzednie listenery
-      if (firebaseListenerActive) {
-        database.ref(getReworkDataPath()).off();
-        database.ref(getScanDataPath()).off();
-        database.ref(getMetadataPath()).off();
-      }
-
-      // Listener dla danych rework
-      database.ref(getReworkDataPath()).on('value', (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          reworkData = data || [];
-          if (currentMode === 'rework') {
-            renderTable();
-            updateStats();
-          }
-        }
-      });
-
-      // Listener dla metadanych
-      database.ref(getMetadataPath()).on('value', (snapshot) => {
-        if (snapshot.exists()) {
-          const metadata = snapshot.val();
-          if (metadata) {
-            currentReworkName.textContent = metadata.reworkName || '-';
-            currentInspectorName.textContent = metadata.inspector || '-';
-          }
-        }
-      });
-
-      firebaseListenerActive = true;
-      console.log('Firebase listeners uruchomione');
-    }
-
-    // Prosta optymalizacja dla STATUS - odświeżaj co 30 sekund
-    let statusRefreshInterval = null;
-    
-    function setupStatusRefresh() {
-      if (statusRefreshInterval) {
-        clearInterval(statusRefreshInterval);
-      }
-      
-      statusRefreshInterval = setInterval(async () => {
-        await loadDataFromFirebase();
-        renderTable();
-        updateStats();
-      }, 30000); // 30 sekund
-    }
-
-    // Funkcje logowania
+  );
+}
+   // FUNKCJE LOGOWANIA
     function selectUserType(type) {
       selectedUserType = type;
-      
       document.querySelectorAll('.user-type-btn').forEach(btn => {
         btn.classList.remove('active');
-        if (btn.dataset.type === type) {
-          btn.classList.add('active');
-        }
+        if (btn.dataset.type === type) btn.classList.add('active');
       });
-      
-      const passwordField = document.getElementById('loginPassword');
-      passwordField.placeholder = `Hasło dla ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      document.getElementById('loginPassword').placeholder = `Hasło dla ${type.charAt(0).toUpperCase() + type.slice(1)}`;
     }
 
     async function login() {
       const password = document.getElementById('loginPassword').value;
-      
       loginError.textContent = '';
-      
-      if (!password) {
-        loginError.textContent = 'Wprowadź hasło';
-        return;
-      }
-      
+      if (!password) { loginError.textContent = 'Wprowadź hasło'; return; }
       const userType = selectedUserType;
       const user = USERS[userType];
-      
       if (user && user.password === password) {
         currentUser = userType;
         userRole = user.role;
         currentUserSpan.textContent = userType.charAt(0).toUpperCase() + userType.slice(1);
         loginScreen.style.display = 'none';
         appContent.style.display = 'block';
-        
-        // Załaduj dane z Firebase
         await loadDataFromFirebase();
-        
         setupPermissions();
-        
         if (userRole === 'inspector') {
           validateForm();
           switchMode('rework');
-          // Uruchom listenery
           setupRealtimeListeners();
-          
-          // Ustaw focus
           setTimeout(() => {
-            if (!reworkNameInput.value) {
-              reworkNameInput.focus();
-            } else if (!inspectorInput.value) {
-              inspectorInput.focus();
-            } else {
-              barcodeInput.focus();
-            }
+            if (!reworkNameInput.value) reworkNameInput.focus();
+            else if (!inspectorInput.value) inspectorInput.focus();
+            else barcodeInput.focus();
           }, 300);
         } else {
           showStatusInfo();
           renderTable();
           updateStats();
-          // Dla status - tylko okresowe odświeżanie
           setupStatusRefresh();
         }
-        
-        // Pokaż debug button w development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          debugBtn.style.display = 'block';
-        }
-        
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') debugBtn.style.display = 'block';
         sessionStorage.setItem('loggedIn', 'true');
         sessionStorage.setItem('user', userType);
         sessionStorage.setItem('userRole', userRole);
@@ -1226,26 +1172,14 @@
           database.ref(getMetadataPath()).off();
           firebaseListenerActive = false;
         }
-        
-        if (statusRefreshInterval) {
-          clearInterval(statusRefreshInterval);
-          statusRefreshInterval = null;
-        }
-        
-        if (saveTimeout) {
-          clearTimeout(saveTimeout);
-          saveTimeout = null;
-        }
-        
-        currentUser = null;
-        userRole = null;
+        if (statusRefreshInterval) clearInterval(statusRefreshInterval);
+        if (saveTimeout) clearTimeout(saveTimeout);
+        currentUser = null; userRole = null;
         appContent.style.display = 'none';
         loginScreen.style.display = 'flex';
-        
         document.getElementById('loginPassword').value = '';
         loginError.textContent = '';
         debugBtn.style.display = 'none';
-        
         sessionStorage.removeItem('loggedIn');
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('userRole');
@@ -1255,51 +1189,34 @@
     function setupPermissions() {
       const isInspector = userRole === 'inspector';
       const isStatus = userRole === 'status';
-      
       modeSelector.style.display = isInspector ? 'flex' : 'none';
       inspectorControls.style.display = isInspector ? 'block' : 'none';
       statusInfo.style.display = isStatus ? 'block' : 'none';
       actionButtons.style.display = isInspector ? 'flex' : 'none';
-      
       if (isStatus) {
         actionHeader.style.display = 'none';
         document.querySelector('table thead').classList.add('status-mode');
-        statusHeader.style.display = '';
-        noteHeader.style.display = '';
-        inspectorHeader.style.display = '';
-        dateHeader.style.display = '';
-        
         barcodeInput.disabled = true;
         barcodeInput.classList.add('disabled-input');
         barcodeInput.placeholder = 'Tryb podglądu - brak edycji';
       } else {
         actionHeader.style.display = '';
-        statusHeader.style.display = '';
-        noteHeader.style.display = '';
-        inspectorHeader.style.display = '';
-        dateHeader.style.display = '';
         document.querySelector('table thead').classList.remove('status-mode');
-        
         validateForm();
       }
     }
 
-    function showStatusInfo() {
-      // Informacje są ładowane przez Firebase
-    }
+    function showStatusInfo() {}
 
     async function checkSession() {
       const loggedIn = sessionStorage.getItem('loggedIn');
       const user = sessionStorage.getItem('user');
       const role = sessionStorage.getItem('userRole');
-      
       if (loggedIn === 'true' && USERS[user]) {
-        currentUser = user;
-        userRole = role;
+        currentUser = user; userRole = role;
         currentUserSpan.textContent = user.charAt(0).toUpperCase() + user.slice(1);
         loginScreen.style.display = 'none';
         appContent.style.display = 'block';
-        
         selectedUserType = user;
         document.querySelectorAll('.user-type-btn').forEach(btn => {
           btn.classList.remove('active');
@@ -1308,10 +1225,8 @@
             if (user === 'status') btn.classList.add('status');
           }
         });
-        
         await loadDataFromFirebase();
         setupPermissions();
-        
         if (userRole === 'inspector') {
           validateForm();
           switchMode('rework');
@@ -1322,49 +1237,32 @@
           updateStats();
           setupStatusRefresh();
         }
-        
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          debugBtn.style.display = 'block';
-        }
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') debugBtn.style.display = 'block';
       }
     }
 
     async function switchMode(mode) {
       if (userRole === 'status') return;
-      
       currentMode = mode;
       reworkModeBtn.classList.toggle('active', mode === 'rework');
       scanModeBtn.classList.toggle('active', mode === 'scan');
-      
-      if (userRole === 'inspector') {
-        fileInputContainer.style.display = mode === 'rework' ? 'block' : 'none';
-      }
-      
+      if (userRole === 'inspector') fileInputContainer.style.display = mode === 'rework' ? 'block' : 'none';
       buttons.style.display = 'none';
       noteInput.style.display = 'none';
       mainContent.classList.toggle('scan-mode', mode === 'scan');
-      
       await saveMetadataToFirebase();
       renderTable();
       updateStats();
       validateForm();
-      
-      if (validateForm()) {
-        setTimeout(() => barcodeInput.focus(), 100);
-      }
+      if (validateForm()) setTimeout(() => barcodeInput.focus(), 100);
     }
 
     function validateForm() {
-      if (userRole === 'status') {
-        return false;
-      }
-      
+      if (userRole === 'status') return false;
       const isNameValid = reworkNameInput.value.trim().length > 0;
       const isInspectorValid = inspectorInput.value.trim().length >= 3;
-
       reworkNameInput.classList.toggle('required-field', !isNameValid);
       inspectorInput.classList.toggle('required-field', !isInspectorValid);
-
       if (isNameValid && isInspectorValid) {
         barcodeInput.disabled = false;
         barcodeInput.classList.remove('disabled-input');
@@ -1380,11 +1278,9 @@
 
     async function handleReworkNameKeyDown(e) {
       if (userRole === 'status') return;
-      
       if (e.key === "Enter") {
         e.preventDefault();
-        const name = reworkNameInput.value.trim();
-        if (name.length > 0) {
+        if (reworkNameInput.value.trim().length > 0) {
           await saveMetadataToFirebase();
           inspectorInput.focus();
           validateForm();
@@ -1394,15 +1290,11 @@
 
     async function handleInspectorKeyDown(e) {
       if (userRole === 'status') return;
-      
       if (e.key === "Enter") {
         e.preventDefault();
-        const value = inspectorInput.value.trim();
-        if (value.length >= 3) {
+        if (inspectorInput.value.trim().length >= 3) {
           await saveMetadataToFirebase();
-          if (validateForm()) {
-            barcodeInput.focus();
-          }
+          if (validateForm()) barcodeInput.focus();
         }
       }
     }
@@ -1410,42 +1302,24 @@
     async function handleFileImport(event) {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - import zablokowany", "error", 3000);
-        event.target.value = '';
-        return;
+        event.target.value = ''; return;
       }
-      
       if (!validateForm()) {
         showMessage("Wprowadź nazwę i inspektora przed importem", "error", 3000);
-        event.target.value = '';
-        return;
+        event.target.value = ''; return;
       }
-
       const file = event.target.files[0];
-      if (!file) {
-        showMessage("Nie wybrano pliku", "error", 3000);
-        return;
-      }
-
+      if (!file) { showMessage("Nie wybrano pliku", "error", 3000); return; }
       fileNameDisplay.textContent = file.name;
-
       const reader = new FileReader();
-      
       reader.onload = async function(e) {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          
-          if (workbook.SheetNames.length === 0) {
-            throw new Error("Brak arkuszy w pliku");
-          }
-
+          if (workbook.SheetNames.length === 0) throw new Error("Brak arkuszy w pliku");
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          
-          if (!worksheet || !worksheet['!ref']) {
-            throw new Error("Arkusz jest pusty");
-          }
-
+          if (!worksheet || !worksheet['!ref']) throw new Error("Arkusz jest pusty");
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           await processImportedData(jsonData);
         } catch (error) {
@@ -1453,53 +1327,31 @@
           showMessage(`Błąd: ${error.message}`, "error", 5000);
         }
       };
-      
-      reader.onerror = function(error) {
-        showMessage("Błąd odczytu pliku. Spróbuj ponownie.", "error", 3000);
-      };
-      
+      reader.onerror = () => showMessage("Błąd odczytu pliku. Spróbuj ponownie.", "error", 3000);
       reader.readAsArrayBuffer(file);
     }
 
     async function processImportedData(rawData) {
       const currentData = currentMode === 'rework' ? reworkData : scanData;
       const newCodes = [];
-      let codesFound = 0;
-      let skippedRows = 0;
-
+      let codesFound = 0, skippedRows = 0;
       for (let i = 0; i < rawData.length; i++) {
         const row = rawData[i];
         if (!row || row.length === 0) continue;
-
         const code = String(row[0] || '').trim().toUpperCase();
-        
         if (code.length >= 14) {
           const exists = currentData.some(item => 
             currentMode === 'rework' 
               ? item.code.substring(0, 14) === code.substring(0, 14) 
               : item.code === code
           );
-          
           if (!exists) {
-            newCodes.push({
-              code: code,
-              status: "",
-              inspector: "",
-              note: "",
-              timestamp: null,
-              isNew: true
-            });
+            newCodes.push({ code: code, status: "", inspector: "", note: "", timestamp: null, isNew: true });
             codesFound++;
           }
-        } else {
-          skippedRows++;
-        }
+        } else skippedRows++;
       }
-
-      if (codesFound === 0) {
-        throw new Error("Nie znaleziono poprawnych kodów w pliku (wymagane min. 14 znaków)");
-      }
-
+      if (codesFound === 0) throw new Error("Nie znaleziono poprawnych kodów w pliku (wymagane min. 14 znaków)");
       if (currentMode === 'rework') {
         reworkData = [...reworkData, ...newCodes];
         await saveReworkDataToFirebase();
@@ -1507,35 +1359,30 @@
         scanData = [...scanData, ...newCodes];
         await saveScanDataToFirebase();
       }
-
       showMessage(`Zaimportowano ${codesFound} kodów (pominięto ${skippedRows} wierszy)`, "success", 3000);
       renderTable();
       updateStats();
     }
 
-    // GŁÓWNA FUNKCJA SKANOWANIA
+    // GŁÓWNA FUNKCJA SKANOWANIA (zmodyfikowana)
     async function handleBarcodeInput(e) {
       if (userRole === 'status') {
         e.preventDefault();
-        showMessage("Tryb podglądu - skanowanie zablokowany", "error", 3000);
+        showMessage("Tryb podglądu - skanowanie zablokowane", "error", 3000);
         return;
       }
-      
       if (isProcessing) {
         e.preventDefault();
         return;
       }
-
       if (!validateForm()) {
         e.preventDefault();
         showMessage("Wprowadź nazwę i inspektora przed skanowaniem", "error", 3000);
         return;
       }
-
       if (e.key === "Enter") {
         e.preventDefault();
         const scannedCode = barcodeInput.value.trim();
-        
         if (scannedCode.length < 14) {
           showMessage("Kod musi mieć co najmniej 14 znaków", "error", 3000);
           barcodeInput.value = "";
@@ -1544,14 +1391,12 @@
         }
 
         isProcessing = true;
-        
         try {
           if (currentMode === 'rework') {
             const scannedCodePrefix = scannedCode.substring(0, 14);
             const matchedItem = reworkData.find(item => {
               if (!item || !item.code) return false;
-              const itemPrefix = item.code.substring(0, 14);
-              return itemPrefix === scannedCodePrefix;
+              return item.code.substring(0, 14) === scannedCodePrefix;
             });
             
             if (!matchedItem) {
@@ -1561,29 +1406,25 @@
               return;
             }
 
-            // Sprawdź czy kod ma pusty status
+            // Jeśli kod ma już status (nie jest pusty)
             if (matchedItem.status !== "") {
-              showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY! Status: " + matchedItem.status, "warning", 3000);
+              // Wywołaj okno dialogowe z pytaniem o zmianę statusu
+              promptStatusChange(matchedItem.code, matchedItem.status);
               barcodeInput.value = "";
               barcodeInput.focus();
               return;
             }
 
-            // ZAPAMIĘTAJ KOD
+            // Kod jest nowy (pusty status)
             tempCode = matchedItem.code;
-            
-            // Pokaż przyciski statusu
-            barcodeInput.value = "";
             buttons.style.display = "flex";
             document.body.classList.add('buttons-visible');
-            
             showMessage(`Kod znaleziony! Wybierz status: OK lub NG`, "info", 0);
-            
             setTimeout(() => {
               const okBtn = document.querySelector('.btn-ok');
               if (okBtn) okBtn.focus();
             }, 50);
-            
+
           } else {
             // Tryb SCAN
             const exists = scanData.some(item => item.code === scannedCode);
@@ -1593,7 +1434,6 @@
               barcodeInput.focus();
               return;
             }
-            
             tempCode = scannedCode;
             await saveEntryScanMode(scannedCode);
           }
@@ -1606,25 +1446,21 @@
       }
     }
 
-    // WYBÓR STATUSU
+    // WYBÓR STATUSU (bez zmian)
     function selectStatus(status) {
       if (userRole === 'status') return;
-      
       if (!tempCode) {
         showMessage("Brak kodu do przypisania statusu", "error", 3000);
         return;
       }
-      
       buttons.style.display = "none";
       document.body.classList.remove('buttons-visible');
-      
       if (status === "NG") {
         noteInput.style.display = "block";
         noteInput.disabled = false;
         noteInput.value = "";
         noteInput.focus();
         showMessage("Wpisz adnotację i naciśnij Enter", "info", 0);
-        
         const handleNoteKeyDown = (e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -1633,14 +1469,13 @@
             noteInput.removeEventListener("keydown", handleNoteKeyDown);
           }
         };
-        
         noteInput.addEventListener("keydown", handleNoteKeyDown);
       } else {
         saveEntry(status, "");
       }
     }
 
-    // ZAPIS STATUSU
+    // ZAPIS STATUSU (zaktualizowany – nadpisuje istniejący wpis)
     async function saveEntry(status, note) {
       if (!tempCode) {
         showMessage("Brak kodu do zapisania", "error", 3000);
@@ -1648,18 +1483,11 @@
       }
 
       let codeIndex = -1;
-      let currentData = [];
-      
       if (currentMode === 'rework') {
-        currentData = reworkData;
         const tempCodePrefix = tempCode.substring(0, 14);
-        codeIndex = currentData.findIndex(item => {
-          if (!item || !item.code) return false;
-          return item.code.substring(0, 14) === tempCodePrefix;
-        });
+        codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === tempCodePrefix);
       } else {
-        currentData = scanData;
-        codeIndex = currentData.findIndex(item => item.code === tempCode);
+        codeIndex = scanData.findIndex(item => item.code === tempCode);
       }
       
       const updateData = {
@@ -1671,19 +1499,27 @@
       };
       
       if (codeIndex !== -1) {
-        currentData[codeIndex] = {
-          ...currentData[codeIndex],
-          ...updateData
-        };
+        // Nadpisanie istniejącego wpisu
+        if (currentMode === 'rework') {
+          reworkData[codeIndex] = {
+            ...reworkData[codeIndex],
+            ...updateData
+          };
+        } else {
+          scanData[codeIndex] = {
+            ...scanData[codeIndex],
+            ...updateData
+          };
+        }
       } else if (currentMode === 'scan') {
+        // Dodanie nowego wpisu (dla scan)
         const newEntry = {
           code: tempCode,
           ...updateData
         };
-        currentData.push(newEntry);
+        scanData.push(newEntry);
       }
       
-      // Zapisz do Firebase z debounce
       await debouncedSave();
       
       noteInput.value = "";
@@ -1709,11 +1545,8 @@
         timestamp: Date.now(),
         isNew: true
       };
-      
       scanData.push(newEntry);
-      
       await debouncedSave();
-      
       showMessage("✓ Kod zeskanowany!", "success", 2000);
       renderTable();
       updateStats();
@@ -1721,20 +1554,28 @@
       barcodeInput.focus();
     }
 
-    // POPRAWIONA FUNKCJA RENDER TABELI - POKAZUJE WSZYSTKIE KODY
+    // RENDEROWANIE TABELI (zmodyfikowane dla trybu SCAN – ukrycie napisu OK)
     function renderTable() {
       console.log("Renderowanie tabeli, dane rework:", reworkData.length, "dane scan:", scanData.length);
       
       const currentData = currentMode === 'rework' ? reworkData : scanData;
       const sortedData = [...currentData].sort((a, b) => {
         if (currentMode === 'rework') {
-          // Sortowanie: puste statusy na końcu
           if (a.status === "" && b.status !== "") return 1;
           if (a.status !== "" && b.status === "") return -1;
         }
         
-        const aValue = a[currentSort.field] || "";
-        const bValue = b[currentSort.field] || "";
+        let aValue = a[currentSort.field];
+        let bValue = b[currentSort.field];
+        
+        // Dla daty sortuj numerycznie po timestamp
+        if (currentSort.field === 'date') {
+          aValue = a.timestamp || 0;
+          bValue = b.timestamp || 0;
+        } else {
+          aValue = aValue || "";
+          bValue = bValue || "";
+        }
         
         if (currentSort.direction === 'asc') {
           return aValue > bValue ? 1 : -1;
@@ -1743,18 +1584,20 @@
         }
       });
 
-      // Dla trybu REWORK pokazuj WSZYSTKIE kody (także z pustym statusem)
-      // Dla trybu SCAN pokazuj tylko zeskanowane
       const displayData = currentMode === 'scan' 
         ? sortedData.filter(item => item.status !== "" && item.status !== "Nie zeskanowano")
-        : sortedData; // Dla rework pokazuj wszystkie
-
-      console.log("Wyświetlane dane:", displayData.length);
+        : sortedData;
 
       list.innerHTML = displayData.map(entry => {
-        // PUSTE POLE zamiast "OCZEKUJE" - tylko dla pustego statusu
-        const statusText = entry.status === "" ? "" : entry.status;
-        const statusClass = getStatusClass(entry.status);
+        // W trybie SCAN, jeśli status = OK, pokaż pusty string, ale zachowaj klasę CSS
+        let statusText = entry.status;
+        if (currentMode === 'scan' && statusText === "OK") {
+          statusText = ""; // puste pole
+        } else if (statusText === "") {
+          statusText = ""; // puste pole dla pustego statusu
+        }
+        
+        const statusClass = entry.status === "" ? "status-empty" : (entry.status === "OK" ? "status-ok" : (entry.status === "NG" ? "status-ng" : ""));
         
         if (userRole === 'status') {
           return `
@@ -1794,15 +1637,10 @@
         }
       }).join('');
 
-      // Resetuj flagę isNew
       if (currentMode === 'rework') {
-        reworkData.forEach(entry => {
-          if (entry) entry.isNew = false;
-        });
+        reworkData.forEach(entry => { if (entry) entry.isNew = false; });
       } else {
-        scanData.forEach(entry => {
-          if (entry) entry.isNew = false;
-        });
+        scanData.forEach(entry => { if (entry) entry.isNew = false; });
       }
     }
 
@@ -1830,7 +1668,6 @@
       document.querySelectorAll('.sort-icon').forEach(icon => {
         icon.textContent = '';
       });
-      
       const iconId = `sort-${currentSort.field}-icon`;
       const icon = document.getElementById(iconId);
       if (icon) {
@@ -1876,7 +1713,6 @@
         showMessage("Tryb podglądu - edycja zablokowana", "error", 3000);
         return;
       }
-      
       codeToRemove = code;
       
       if (currentMode === 'rework') {
@@ -1886,16 +1722,26 @@
         confirmationTitle.textContent = "Czy na pewno chcesz usunąć ten kod?";
         confirmationMessage.textContent = "Kod zostanie trwale usunięty z listy.";
       }
-      
+      confirmCallback = null; // użyjemy domyślnego zachowania
       confirmationDialog.style.display = 'flex';
     }
 
     function cancelRemoval() {
       confirmationDialog.style.display = 'none';
       codeToRemove = null;
+      confirmCallback = null;
     }
 
     async function confirmRemoval() {
+      // Jeśli istnieje callback (np. zmiana statusu), wywołaj go
+      if (confirmCallback) {
+        confirmCallback();
+        confirmationDialog.style.display = 'none';
+        confirmCallback = null;
+        codeToRemove = null;
+        return;
+      }
+      
       if (!codeToRemove) return;
       
       let success = false;
@@ -1911,7 +1757,6 @@
             timestamp: null,
             isNew: false
           };
-          
           await debouncedSave();
           showMessage(`↻ Zresetowano status kodu`, "success", 2000);
           success = true;
@@ -2004,7 +1849,6 @@
         showMessage("Tryb podglądu - reset zablokowany", "error", 3000);
         return;
       }
-      
       if (confirm("Czy na pewno chcesz wyczyścić wszystkie dane w bieżącym trybie?")) {
         if (currentMode === 'rework') {
           reworkData = [];
@@ -2027,7 +1871,6 @@
       message.classList.add(type);
       message.textContent = msg;
       message.style.display = "block";
-      
       if (duration > 0) {
         setTimeout(() => {
           message.textContent = "";
@@ -2095,17 +1938,13 @@
 
     window.onload = function() {
       checkSession();
-      
       document.querySelector('.btn-ok')?.addEventListener('click', function() {
         selectStatus('OK');
       });
-      
       document.querySelector('.btn-ng')?.addEventListener('click', function() {
         selectStatus('NG');
       });
-      
       barcodeInput.addEventListener('keydown', handleBarcodeInput);
-      
       setTimeout(() => {
         document.getElementById('loginPassword')?.focus();
       }, 500);
@@ -2113,3 +1952,4 @@
   </script>
 </body>
 </html>
+
