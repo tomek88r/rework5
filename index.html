@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>R/S - Rework Scan</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (Authentication + Database) -->
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
   <style>
     * {
@@ -432,7 +433,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 10px;
-      min-width: 600px; /* Zmniejszona minimalna szerokość */
+      min-width: 600px;
     }
 
     th, td {
@@ -446,13 +447,13 @@
     }
 
     /* Szerokości kolumn */
-    th:nth-child(1), td:nth-child(1) { max-width: 110px; width: 110px; } /* Kod - 15 znaków ~110px */
-    th:nth-child(2), td:nth-child(2) { max-width: 45px; width: 45px; }   /* Status - 6 znaków */
-    th:nth-child(3), td:nth-child(3) { max-width: 90px; width: 90px; }   /* Status po reworku - nagłówek w jednej linii */
-    th:nth-child(4), td:nth-child(4) { max-width: 80px; width: 80px; }   /* Uwagi - elastycznie */
-    th:nth-child(5), td:nth-child(5) { max-width: 60px; width: 60px; }   /* Inspektor */
-    th:nth-child(6), td:nth-child(6) { max-width: 85px; width: 85px; }   /* Data */
-    th:nth-child(7), td:nth-child(7) { max-width: 25px; width: 25px; }   /* Akcja */
+    th:nth-child(1), td:nth-child(1) { max-width: 110px; width: 110px; }
+    th:nth-child(2), td:nth-child(2) { max-width: 45px; width: 45px; }
+    th:nth-child(3), td:nth-child(3) { max-width: 90px; width: 90px; }
+    th:nth-child(4), td:nth-child(4) { max-width: 80px; width: 80px; }
+    th:nth-child(5), td:nth-child(5) { max-width: 60px; width: 60px; }
+    th:nth-child(6), td:nth-child(6) { max-width: 85px; width: 85px; }
+    th:nth-child(7), td:nth-child(7) { max-width: 25px; width: 25px; }
 
     th {
       background-color: #007acc;
@@ -635,7 +636,6 @@
       .stat-value { font-size: 10px; }
       .reset-icon { width: 20px; height: 20px; font-size: 10px; }
       
-      /* Mniejsze szerokości na telefonie */
       th:nth-child(1), td:nth-child(1) { max-width: 90px; width: 90px; }
       th:nth-child(2), td:nth-child(2) { max-width: 40px; width: 40px; }
       th:nth-child(3), td:nth-child(3) { max-width: 75px; width: 75px; }
@@ -856,6 +856,7 @@
   <button id="debugBtn" onclick="debugData()">DEBUG</button>
 
   <script>
+    // Konfiguracja Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA8JL5DX2ImYy0xNgUFr34kIYsHH_9MXQU",
       authDomain: "reworkscan-de36b.firebaseapp.com",
@@ -866,13 +867,23 @@
       appId: "1:57877047412:web:68584c15ba46151eb7c921"
     };
 
+    // Inicjalizacja Firebase
     try {
       firebase.initializeApp(firebaseConfig);
     } catch (error) {
       console.log("Firebase już zainicjalizowany");
     }
+    
+    const auth = firebase.auth();
     const database = firebase.database();
 
+    // Mapowanie typów użytkowników na adresy email
+    const USER_EMAILS = {
+      'inspektor': 'inspektor@reworkscan.pl',
+      'status': 'status@reworkscan.pl'
+    };
+
+    // Elementy DOM
     const loginScreen = document.getElementById("loginScreen");
     const appContent = document.getElementById("appContent");
     const currentUserSpan = document.getElementById("currentUser");
@@ -907,6 +918,7 @@
     const noteHeader = document.getElementById("noteHeader");
     const debugBtn = document.getElementById("debugBtn");
 
+    // Dane aplikacji
     let reworkData = [];
     let scanData = [];
     let currentSort = { field: 'code', direction: 'asc' };
@@ -920,11 +932,213 @@
     let firebaseListenerActive = false;
     let confirmCallback = null;
     let currentStatusField = 'status';
+// Funkcje logowania z Firebase Auth
+function selectUserType(type) {
+  selectedUserType = type;
+  document.querySelectorAll('.user-type-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.type === type) btn.classList.add('active');
+  });
+  
+  const passwordField = document.getElementById('loginPassword');
+  passwordField.placeholder = `Hasło dla ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+  passwordField.value = '';
+  loginError.textContent = '';
+}
 
-    const USERS = {
-      'inspektor': { password: 'samsung1', role: 'inspector' },
-      'status': { password: 'samsung26', role: 'status' }
-    };
+async function login() {
+  const password = document.getElementById('loginPassword').value;
+  const email = USER_EMAILS[selectedUserType];
+  
+  loginError.textContent = '';
+  
+  if (!password) {
+    loginError.textContent = 'Wprowadź hasło';
+    return;
+  }
+
+  try {
+    // Logowanie do Firebase Auth
+    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    const user = userCredential.user;
+    
+    // Ustawienie roli na podstawie emaila
+    if (user.email === USER_EMAILS.inspektor) {
+      userRole = 'inspector';
+      currentUser = 'inspektor';
+    } else if (user.email === USER_EMAILS.status) {
+      userRole = 'status';
+      currentUser = 'status';
+    }
+    
+    currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+    loginScreen.style.display = 'none';
+    appContent.style.display = 'block';
+    
+    // Załaduj dane z Firebase
+    await loadDataFromFirebase();
+    
+    setupPermissions();
+    
+    if (userRole === 'inspector') {
+      validateForm();
+      switchMode('rework');
+      setupRealtimeListeners();
+      
+      setTimeout(() => {
+        if (!reworkNameInput.value) {
+          reworkNameInput.focus();
+        } else if (!inspectorInput.value) {
+          inspectorInput.focus();
+        } else {
+          barcodeInput.focus();
+        }
+      }, 300);
+    } else {
+      showStatusInfo();
+      renderTable();
+      updateStats();
+      setupStatusRefresh();
+    }
+    
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      debugBtn.style.display = 'block';
+    }
+    
+    // Zapisz w sessionStorage
+    sessionStorage.setItem('loggedIn', 'true');
+    sessionStorage.setItem('user', currentUser);
+    sessionStorage.setItem('userRole', userRole);
+    
+  } catch (error) {
+    console.error('Błąd logowania:', error);
+    if (error.code === 'auth/wrong-password') {
+      loginError.textContent = 'Nieprawidłowe hasło';
+    } else if (error.code === 'auth/user-not-found') {
+      loginError.textContent = 'Użytkownik nie istnieje';
+    } else {
+      loginError.textContent = 'Błąd logowania. Spróbuj ponownie.';
+    }
+  }
+}
+
+async function logout() {
+  if (confirm('Czy na pewno chcesz się wylogować?')) {
+    try {
+      await auth.signOut();
+      
+      if (firebaseListenerActive) {
+        database.ref(getReworkDataPath()).off();
+        database.ref(getScanDataPath()).off();
+        database.ref(getMetadataPath()).off();
+        firebaseListenerActive = false;
+      }
+      
+      if (statusRefreshInterval) {
+        clearInterval(statusRefreshInterval);
+        statusRefreshInterval = null;
+      }
+      
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+      
+      currentUser = null;
+      userRole = null;
+      appContent.style.display = 'none';
+      loginScreen.style.display = 'flex';
+      
+      document.getElementById('loginPassword').value = '';
+      loginError.textContent = '';
+      debugBtn.style.display = 'none';
+      
+      sessionStorage.removeItem('loggedIn');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('userRole');
+      
+    } catch (error) {
+      console.error('Błąd wylogowania:', error);
+    }
+  }
+}
+
+// Sprawdzenie sesji przy starcie
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    // Użytkownik jest zalogowany
+    if (user.email === USER_EMAILS.inspektor) {
+      userRole = 'inspector';
+      currentUser = 'inspektor';
+    } else if (user.email === USER_EMAILS.status) {
+      userRole = 'status';
+      currentUser = 'status';
+    }
+    
+    currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+    loginScreen.style.display = 'none';
+    appContent.style.display = 'block';
+    
+    await loadDataFromFirebase();
+    setupPermissions();
+    
+    if (userRole === 'inspector') {
+      validateForm();
+      switchMode('rework');
+      setupRealtimeListeners();
+    } else {
+      showStatusInfo();
+      renderTable();
+      updateStats();
+      setupStatusRefresh();
+    }
+    
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      debugBtn.style.display = 'block';
+    }
+    
+    sessionStorage.setItem('loggedIn', 'true');
+    sessionStorage.setItem('user', currentUser);
+    sessionStorage.setItem('userRole', userRole);
+  }
+});
+
+async function checkSession() {
+  // Sprawdzamy czy jest zalogowany użytkownik
+  const user = auth.currentUser;
+  if (user) {
+    if (user.email === USER_EMAILS.inspektor) {
+      userRole = 'inspector';
+      currentUser = 'inspektor';
+    } else if (user.email === USER_EMAILS.status) {
+      userRole = 'status';
+      currentUser = 'status';
+    }
+    
+    currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+    loginScreen.style.display = 'none';
+    appContent.style.display = 'block';
+    
+    await loadDataFromFirebase();
+    setupPermissions();
+    
+    if (userRole === 'inspector') {
+      validateForm();
+      switchMode('rework');
+      setupRealtimeListeners();
+    } else {
+      showStatusInfo();
+      renderTable();
+      updateStats();
+      setupStatusRefresh();
+    }
+    
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      debugBtn.style.display = 'block';
+    }
+  }
+}
+// Funkcje Firebase Database
 function getReworkDataPath() { return 'reworkData'; }
 function getScanDataPath() { return 'scanData'; }
 function getMetadataPath() { return 'metadata'; }
@@ -1061,6 +1275,30 @@ function setupStatusRefresh() {
   }, 30000);
 }
 
+function setupPermissions() {
+  const isInspector = userRole === 'inspector';
+  const isStatus = userRole === 'status';
+  
+  modeSelector.style.display = isInspector ? 'flex' : 'none';
+  inspectorControls.style.display = isInspector ? 'block' : 'none';
+  statusInfo.style.display = isStatus ? 'block' : 'none';
+  actionButtons.style.display = isInspector ? 'flex' : 'none';
+  
+  if (isStatus) {
+    actionHeader.style.display = 'none';
+    document.querySelector('table thead').classList.add('status-mode');
+    barcodeInput.disabled = true;
+    barcodeInput.classList.add('disabled-input');
+    barcodeInput.placeholder = 'Tryb podglądu - brak edycji';
+  } else {
+    actionHeader.style.display = '';
+    document.querySelector('table thead').classList.remove('status-mode');
+    validateForm();
+  }
+}
+
+function showStatusInfo() {}
+
 function showConfirmation(title, message, onConfirm) {
   confirmationTitle.textContent = title;
   confirmationMessage.textContent = message;
@@ -1091,353 +1329,234 @@ function promptStatusChange(code, fieldToUpdate, message) {
     }
   );
 }
-function selectUserType(type) {
-  selectedUserType = type;
-  document.querySelectorAll('.user-type-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.type === type) btn.classList.add('active');
-  });
-  document.getElementById('loginPassword').placeholder = `Hasło dla ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-}
-
-async function login() {
-  const password = document.getElementById('loginPassword').value;
-  loginError.textContent = '';
-  if (!password) { loginError.textContent = 'Wprowadź hasło'; return; }
-  const userType = selectedUserType;
-  const user = USERS[userType];
-  if (user && user.password === password) {
-    currentUser = userType;
-    userRole = user.role;
-    currentUserSpan.textContent = userType.charAt(0).toUpperCase() + userType.slice(1);
-    loginScreen.style.display = 'none';
-    appContent.style.display = 'block';
-    await loadDataFromFirebase();
-    setupPermissions();
-    if (userRole === 'inspector') {
-      validateForm();
-      switchMode('rework');
-      setupRealtimeListeners();
-      setTimeout(() => {
-        if (!reworkNameInput.value) reworkNameInput.focus();
-        else if (!inspectorInput.value) inspectorInput.focus();
-        else barcodeInput.focus();
-      }, 300);
-    } else {
-      showStatusInfo();
-      renderTable();
-      updateStats();
-      setupStatusRefresh();
-    }
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') debugBtn.style.display = 'block';
-    sessionStorage.setItem('loggedIn', 'true');
-    sessionStorage.setItem('user', userType);
-    sessionStorage.setItem('userRole', userRole);
-  } else {
-    loginError.textContent = 'Nieprawidłowe hasło';
-  }
-}
-
-function logout() {
-  if (confirm('Czy na pewno chcesz się wylogować?')) {
-    if (firebaseListenerActive) {
-      database.ref(getReworkDataPath()).off();
-      database.ref(getScanDataPath()).off();
-      database.ref(getMetadataPath()).off();
-      firebaseListenerActive = false;
-    }
-    if (statusRefreshInterval) clearInterval(statusRefreshInterval);
-    if (saveTimeout) clearTimeout(saveTimeout);
-    currentUser = null; userRole = null;
-    appContent.style.display = 'none';
-    loginScreen.style.display = 'flex';
-    document.getElementById('loginPassword').value = '';
-    loginError.textContent = '';
-    debugBtn.style.display = 'none';
-    sessionStorage.removeItem('loggedIn');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('userRole');
-  }
-}
-
-function setupPermissions() {
-  const isInspector = userRole === 'inspector';
-  const isStatus = userRole === 'status';
-  modeSelector.style.display = isInspector ? 'flex' : 'none';
-  inspectorControls.style.display = isInspector ? 'block' : 'none';
-  statusInfo.style.display = isStatus ? 'block' : 'none';
-  actionButtons.style.display = isInspector ? 'flex' : 'none';
-  if (isStatus) {
-    actionHeader.style.display = 'none';
-    document.querySelector('table thead').classList.add('status-mode');
-    barcodeInput.disabled = true;
-    barcodeInput.classList.add('disabled-input');
-    barcodeInput.placeholder = 'Tryb podglądu - brak edycji';
-  } else {
-    actionHeader.style.display = '';
-    document.querySelector('table thead').classList.remove('status-mode');
-    validateForm();
-  }
-}
-
-function showStatusInfo() {}
-
-async function checkSession() {
-  const loggedIn = sessionStorage.getItem('loggedIn');
-  const user = sessionStorage.getItem('user');
-  const role = sessionStorage.getItem('userRole');
-  if (loggedIn === 'true' && USERS[user]) {
-    currentUser = user; userRole = role;
-    currentUserSpan.textContent = user.charAt(0).toUpperCase() + user.slice(1);
-    loginScreen.style.display = 'none';
-    appContent.style.display = 'block';
-    selectedUserType = user;
-    document.querySelectorAll('.user-type-btn').forEach(btn => {
-      btn.classList.remove('active');
-      if (btn.dataset.type === user) {
-        btn.classList.add('active');
-        if (user === 'status') btn.classList.add('status');
-      }
-    });
-    await loadDataFromFirebase();
-    setupPermissions();
-    if (userRole === 'inspector') {
-      validateForm();
-      switchMode('rework');
-      setupRealtimeListeners();
-    } else {
-      showStatusInfo();
-      renderTable();
-      updateStats();
-      setupStatusRefresh();
-    }
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') debugBtn.style.display = 'block';
-  }
-}
-
-async function switchMode(mode) {
-  if (userRole === 'status') return;
-  currentMode = mode;
-  reworkModeBtn.classList.toggle('active', mode === 'rework');
-  scanModeBtn.classList.toggle('active', mode === 'scan');
-  if (userRole === 'inspector') fileInputContainer.style.display = mode === 'rework' ? 'block' : 'none';
-  buttons.style.display = 'none';
-  noteInput.style.display = 'none';
-  mainContent.classList.toggle('scan-mode', mode === 'scan');
-  await saveMetadataToFirebase();
-  renderTable();
-  updateStats();
-  validateForm();
-  if (validateForm()) setTimeout(() => barcodeInput.focus(), 100);
-}
-
-function validateForm() {
-  if (userRole === 'status') return false;
-  const isNameValid = reworkNameInput.value.trim().length > 0;
-  const isInspectorValid = inspectorInput.value.trim().length >= 3;
-  reworkNameInput.classList.toggle('required-field', !isNameValid);
-  inspectorInput.classList.toggle('required-field', !isInspectorValid);
-  if (isNameValid && isInspectorValid) {
-    barcodeInput.disabled = false;
-    barcodeInput.classList.remove('disabled-input');
-    barcodeInput.placeholder = "Wpisz kod kreskowy i naciśnij Enter";
-    return true;
-  } else {
-    barcodeInput.disabled = true;
-    barcodeInput.classList.add('disabled-input');
-    barcodeInput.placeholder = "Wprowadź nazwę i inspektora";
-    return false;
-  }
-}
-
-async function handleReworkNameKeyDown(e) {
-  if (userRole === 'status') return;
-  if (e.key === "Enter") {
-    e.preventDefault();
-    if (reworkNameInput.value.trim().length > 0) {
-      await saveMetadataToFirebase();
-      inspectorInput.focus();
-      validateForm();
-    }
-  }
-}
-
-async function handleInspectorKeyDown(e) {
-  if (userRole === 'status') return;
-  if (e.key === "Enter") {
-    e.preventDefault();
-    if (inspectorInput.value.trim().length >= 3) {
-      await saveMetadataToFirebase();
-      if (validateForm()) barcodeInput.focus();
-    }
-  }
-}
-
-async function handleFileImport(event) {
-  if (userRole === 'status') {
-    showMessage("Tryb podglądu - import zablokowany", "error", 3000);
-    event.target.value = ''; return;
-  }
-  if (!validateForm()) {
-    showMessage("Wprowadź nazwę i inspektora przed importem", "error", 3000);
-    event.target.value = ''; return;
-  }
-  const file = event.target.files[0];
-  if (!file) { showMessage("Nie wybrano pliku", "error", 3000); return; }
-  fileNameDisplay.textContent = file.name;
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      if (workbook.SheetNames.length === 0) throw new Error("Brak arkuszy w pliku");
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      if (!worksheet || !worksheet['!ref']) throw new Error("Arkusz jest pusty");
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      await processImportedData(jsonData);
-    } catch (error) {
-      console.error(error);
-      showMessage(`Błąd: ${error.message}`, "error", 5000);
-    }
-  };
-  reader.onerror = () => showMessage("Błąd odczytu pliku. Spróbuj ponownie.", "error", 3000);
-  reader.readAsArrayBuffer(file);
-}
-
-async function processImportedData(rawData) {
-  const currentData = currentMode === 'rework' ? reworkData : scanData;
-  const newCodes = [];
-  let codesFound = 0, skippedRows = 0;
-  for (let i = 0; i < rawData.length; i++) {
-    const row = rawData[i];
-    if (!row || row.length === 0) continue;
-    const code = String(row[0] || '').trim().toUpperCase();
-    if (code.length >= 14) {
-      const exists = currentData.some(item => 
-        currentMode === 'rework' 
-          ? item.code.substring(0, 14) === code.substring(0, 14) 
-          : item.code === code
-      );
-      if (!exists) {
-        newCodes.push({ 
-          code: code, 
-          status: "", 
-          statusAfterRework: "",
-          inspector: "", 
-          note: "", 
-          timestamp: null, 
-          isNew: true 
-        });
-        codesFound++;
-      }
-    } else skippedRows++;
-  }
-  if (codesFound === 0) throw new Error("Nie znaleziono poprawnych kodów w pliku (wymagane min. 14 znaków)");
-  if (currentMode === 'rework') {
-    reworkData = [...reworkData, ...newCodes];
-    await saveReworkDataToFirebase();
-  } else {
-    scanData = [...scanData, ...newCodes];
-    await saveScanDataToFirebase();
-  }
-  showMessage(`Zaimportowano ${codesFound} kodów (pominięto ${skippedRows} wierszy)`, "success", 3000);
-  renderTable();
-  updateStats();
-}
-
-async function handleBarcodeInput(e) {
-  if (userRole === 'status') {
-    e.preventDefault();
-    showMessage("Tryb podglądu - skanowanie zablokowane", "error", 3000);
-    return;
-  }
-  if (isProcessing) {
-    e.preventDefault();
-    return;
-  }
-  if (!validateForm()) {
-    e.preventDefault();
-    showMessage("Wprowadź nazwę i inspektora przed skanowaniem", "error", 3000);
-    return;
-  }
-  if (e.key === "Enter") {
-    e.preventDefault();
-    const scannedCode = barcodeInput.value.trim();
-    if (scannedCode.length < 14) {
-      showMessage("Kod musi mieć co najmniej 14 znaków", "error", 3000);
-      barcodeInput.value = "";
-      barcodeInput.focus();
-      return;
-    }
-
-    isProcessing = true;
-    try {
-      if (currentMode === 'rework') {
-        const scannedCodePrefix = scannedCode.substring(0, 14);
-        const matchedItem = reworkData.find(item => {
-          if (!item || !item.code) return false;
-          return item.code.substring(0, 14) === scannedCodePrefix;
-        });
-        
-        if (!matchedItem) {
-          showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 3000);
-          barcodeInput.value = "";
-          barcodeInput.focus();
-          return;
-        }
-
-        const okNgBtn = document.querySelector('.btn-ok-ng');
-        if (okNgBtn) okNgBtn.style.display = 'block';
-
-        if (matchedItem.status === "") {
-          tempCode = matchedItem.code;
-          currentStatusField = 'status';
-          buttons.style.display = "flex";
-          document.body.classList.add('buttons-visible');
-          showMessage(`Kod znaleziony! Wybierz status (pierwszy skan): OK, NG lub OK/NG`, "info", 0);
-          setTimeout(() => {
-            const okBtn = document.querySelector('.btn-ok');
-            if (okBtn) okBtn.focus();
-          }, 50);
-        } 
-        else {
-          tempCode = matchedItem.code;
-          currentStatusField = 'statusAfterRework';
-          
-          if (okNgBtn) okNgBtn.style.display = 'none';
-          
-          buttons.style.display = "flex";
-          document.body.classList.add('buttons-visible');
-          
-          showMessage(`Kod znaleziony! Wybierz status po reworku: OK lub NG`, "info", 0);
-          
-          setTimeout(() => {
-            const okBtn = document.querySelector('.btn-ok');
-            if (okBtn) okBtn.focus();
-          }, 50);
-        }
-
+ // Funkcje walidacji i obsługi formularza
+    function validateForm() {
+      if (userRole === 'status') return false;
+      const isNameValid = reworkNameInput.value.trim().length > 0;
+      const isInspectorValid = inspectorInput.value.trim().length >= 3;
+      reworkNameInput.classList.toggle('required-field', !isNameValid);
+      inspectorInput.classList.toggle('required-field', !isInspectorValid);
+      if (isNameValid && isInspectorValid) {
+        barcodeInput.disabled = false;
+        barcodeInput.classList.remove('disabled-input');
+        barcodeInput.placeholder = "Wpisz kod kreskowy i naciśnij Enter";
+        return true;
       } else {
-        const exists = scanData.some(item => item.code === scannedCode);
-        if (exists) {
-          showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 3000);
+        barcodeInput.disabled = true;
+        barcodeInput.classList.add('disabled-input');
+        barcodeInput.placeholder = "Wprowadź nazwę i inspektora";
+        return false;
+      }
+    }
+
+    async function handleReworkNameKeyDown(e) {
+      if (userRole === 'status') return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (reworkNameInput.value.trim().length > 0) {
+          await saveMetadataToFirebase();
+          inspectorInput.focus();
+          validateForm();
+        }
+      }
+    }
+
+    async function handleInspectorKeyDown(e) {
+      if (userRole === 'status') return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (inspectorInput.value.trim().length >= 3) {
+          await saveMetadataToFirebase();
+          if (validateForm()) barcodeInput.focus();
+        }
+      }
+    }
+
+    async function switchMode(mode) {
+      if (userRole === 'status') return;
+      currentMode = mode;
+      reworkModeBtn.classList.toggle('active', mode === 'rework');
+      scanModeBtn.classList.toggle('active', mode === 'scan');
+      if (userRole === 'inspector') fileInputContainer.style.display = mode === 'rework' ? 'block' : 'none';
+      buttons.style.display = 'none';
+      noteInput.style.display = 'none';
+      mainContent.classList.toggle('scan-mode', mode === 'scan');
+      await saveMetadataToFirebase();
+      renderTable();
+      updateStats();
+      validateForm();
+      if (validateForm()) setTimeout(() => barcodeInput.focus(), 100);
+    }
+
+    // Import plików
+    async function handleFileImport(event) {
+      if (userRole === 'status') {
+        showMessage("Tryb podglądu - import zablokowany", "error", 3000);
+        event.target.value = ''; return;
+      }
+      if (!validateForm()) {
+        showMessage("Wprowadź nazwę i inspektora przed importem", "error", 3000);
+        event.target.value = ''; return;
+      }
+      const file = event.target.files[0];
+      if (!file) { showMessage("Nie wybrano pliku", "error", 3000); return; }
+      fileNameDisplay.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          if (workbook.SheetNames.length === 0) throw new Error("Brak arkuszy w pliku");
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          if (!worksheet || !worksheet['!ref']) throw new Error("Arkusz jest pusty");
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          await processImportedData(jsonData);
+        } catch (error) {
+          console.error(error);
+          showMessage(`Błąd: ${error.message}`, "error", 5000);
+        }
+      };
+      reader.onerror = () => showMessage("Błąd odczytu pliku. Spróbuj ponownie.", "error", 3000);
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function processImportedData(rawData) {
+      const currentData = currentMode === 'rework' ? reworkData : scanData;
+      const newCodes = [];
+      let codesFound = 0, skippedRows = 0;
+      for (let i = 0; i < rawData.length; i++) {
+        const row = rawData[i];
+        if (!row || row.length === 0) continue;
+        const code = String(row[0] || '').trim().toUpperCase();
+        if (code.length >= 14) {
+          const exists = currentData.some(item => 
+            currentMode === 'rework' 
+              ? item.code.substring(0, 14) === code.substring(0, 14) 
+              : item.code === code
+          );
+          if (!exists) {
+            newCodes.push({ 
+              code: code, 
+              status: "", 
+              statusAfterRework: "",
+              inspector: "", 
+              note: "", 
+              timestamp: null, 
+              isNew: true 
+            });
+            codesFound++;
+          }
+        } else skippedRows++;
+      }
+      if (codesFound === 0) throw new Error("Nie znaleziono poprawnych kodów w pliku (wymagane min. 14 znaków)");
+      if (currentMode === 'rework') {
+        reworkData = [...reworkData, ...newCodes];
+        await saveReworkDataToFirebase();
+      } else {
+        scanData = [...scanData, ...newCodes];
+        await saveScanDataToFirebase();
+      }
+      showMessage(`Zaimportowano ${codesFound} kodów (pominięto ${skippedRows} wierszy)`, "success", 3000);
+      renderTable();
+      updateStats();
+    }
+
+    // Główna funkcja skanowania
+    async function handleBarcodeInput(e) {
+      if (userRole === 'status') {
+        e.preventDefault();
+        showMessage("Tryb podglądu - skanowanie zablokowane", "error", 3000);
+        return;
+      }
+      if (isProcessing) {
+        e.preventDefault();
+        return;
+      }
+      if (!validateForm()) {
+        e.preventDefault();
+        showMessage("Wprowadź nazwę i inspektora przed skanowaniem", "error", 3000);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const scannedCode = barcodeInput.value.trim();
+        if (scannedCode.length < 14) {
+          showMessage("Kod musi mieć co najmniej 14 znaków", "error", 3000);
           barcodeInput.value = "";
           barcodeInput.focus();
           return;
         }
-        tempCode = scannedCode;
-        await saveEntryScanMode(scannedCode);
+
+        isProcessing = true;
+        try {
+          if (currentMode === 'rework') {
+            const scannedCodePrefix = scannedCode.substring(0, 14);
+            const matchedItem = reworkData.find(item => {
+              if (!item || !item.code) return false;
+              return item.code.substring(0, 14) === scannedCodePrefix;
+            });
+            
+            if (!matchedItem) {
+              showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 3000);
+              barcodeInput.value = "";
+              barcodeInput.focus();
+              return;
+            }
+
+            const okNgBtn = document.querySelector('.btn-ok-ng');
+            if (okNgBtn) okNgBtn.style.display = 'block';
+
+            if (matchedItem.status === "") {
+              tempCode = matchedItem.code;
+              currentStatusField = 'status';
+              buttons.style.display = "flex";
+              document.body.classList.add('buttons-visible');
+              showMessage(`Kod znaleziony! Wybierz status (pierwszy skan): OK, NG lub OK/NG`, "info", 0);
+              setTimeout(() => {
+                const okBtn = document.querySelector('.btn-ok');
+                if (okBtn) okBtn.focus();
+              }, 50);
+            } 
+            else {
+              tempCode = matchedItem.code;
+              currentStatusField = 'statusAfterRework';
+              
+              if (okNgBtn) okNgBtn.style.display = 'none';
+              
+              buttons.style.display = "flex";
+              document.body.classList.add('buttons-visible');
+              
+              showMessage(`Kod znaleziony! Wybierz status po reworku: OK lub NG`, "info", 0);
+              
+              setTimeout(() => {
+                const okBtn = document.querySelector('.btn-ok');
+                if (okBtn) okBtn.focus();
+              }, 50);
+            }
+
+          } else {
+            const exists = scanData.some(item => item.code === scannedCode);
+            if (exists) {
+              showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 3000);
+              barcodeInput.value = "";
+              barcodeInput.focus();
+              return;
+            }
+            tempCode = scannedCode;
+            await saveEntryScanMode(scannedCode);
+          }
+        } catch (error) {
+          console.error("Błąd skanowania:", error);
+          showMessage("Błąd przetwarzania kodu", "error", 3000);
+        } finally {
+          isProcessing = false;
+        }
       }
-    } catch (error) {
-      console.error("Błąd skanowania:", error);
-      showMessage("Błąd przetwarzania kodu", "error", 3000);
-    } finally {
-      isProcessing = false;
     }
-  }
-}
-function selectStatus(status) {
+
+    // Wybór statusu
+    function selectStatus(status) {
       if (userRole === 'status') return;
       if (!tempCode) {
         showMessage("Brak kodu do przypisania statusu", "error", 3000);
@@ -1475,6 +1594,7 @@ function selectStatus(status) {
       }
     }
 
+    // Zapis statusu
     async function saveEntry(status, note) {
       if (!tempCode) {
         showMessage("Brak kodu do zapisania", "error", 3000);
@@ -1575,6 +1695,7 @@ function selectStatus(status) {
       barcodeInput.focus();
     }
 
+    // Renderowanie tabeli
     function renderTable() {
       console.log("Renderowanie tabeli, dane rework:", reworkData.length, "dane scan:", scanData.length);
       
@@ -1669,6 +1790,7 @@ function selectStatus(status) {
       }
     }
 
+    // Sortowanie
     function sortTable(field) {
       if (currentSort.field === field) {
         currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
@@ -1691,6 +1813,7 @@ function selectStatus(status) {
       }
     }
 
+    // Statystyki
     function updateStats() {
       if (currentMode === 'rework') {
         const total = reworkData.length;
@@ -1741,6 +1864,7 @@ function selectStatus(status) {
       }
     }
 
+    // Usuwanie/reset
     function showRemoveConfirmation(code) {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - edycja zablokowana", "error", 3000);
@@ -1812,6 +1936,7 @@ function selectStatus(status) {
       }
     }
 
+    // Eksport do Excel
     function exportToExcel() {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - eksport zablokowany", "error", 3000);
@@ -1878,6 +2003,7 @@ function selectStatus(status) {
       XLSX.writeFile(wb, fileName);
     }
 
+    // Reset wszystkich danych
     async function resetAll() {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - reset zablokowany", "error", 3000);
@@ -1901,6 +2027,7 @@ function selectStatus(status) {
       }
     }
 
+    // Pomocnicze
     function showMessage(msg, type = "info", duration = 3000) {
       message.className = "message";
       message.classList.add(type);
@@ -1933,6 +2060,7 @@ function selectStatus(status) {
       console.log("==================");
     }
 
+    // Event listeners
     document.getElementById('loginPassword').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') login();
     });
@@ -1976,6 +2104,7 @@ function selectStatus(status) {
       }
     });
 
+    // Inicjalizacja
     window.onload = function() {
       checkSession();
       document.querySelector('.btn-ok')?.addEventListener('click', function() {
@@ -1995,3 +2124,4 @@ function selectStatus(status) {
   </script>
 </body>
 </html>
+
