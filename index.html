@@ -39,7 +39,7 @@
     .logo {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       font-size: 20px;
       font-weight: 800;
       letter-spacing: 0.5px;
@@ -77,6 +77,27 @@
       position: absolute;
       bottom: 4px;
       right: 10px;
+    }
+
+    .reset-icon {
+      background: #dc3545;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 5px;
+      cursor: pointer;
+      border: 1px solid #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .reset-icon:hover {
+      background: #c82333;
     }
 
     .login-screen {
@@ -411,7 +432,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 10px;
-      min-width: 700px;
+      min-width: 600px; /* Zmniejszona minimalna szerokość */
     }
 
     th, td {
@@ -419,7 +440,19 @@
       text-align: left;
       border-bottom: 1px solid #eee;
       line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
+
+    /* Szerokości kolumn */
+    th:nth-child(1), td:nth-child(1) { max-width: 110px; width: 110px; } /* Kod - 15 znaków ~110px */
+    th:nth-child(2), td:nth-child(2) { max-width: 45px; width: 45px; }   /* Status - 6 znaków */
+    th:nth-child(3), td:nth-child(3) { max-width: 90px; width: 90px; }   /* Status po reworku - nagłówek w jednej linii */
+    th:nth-child(4), td:nth-child(4) { max-width: 80px; width: 80px; }   /* Uwagi - elastycznie */
+    th:nth-child(5), td:nth-child(5) { max-width: 60px; width: 60px; }   /* Inspektor */
+    th:nth-child(6), td:nth-child(6) { max-width: 85px; width: 85px; }   /* Data */
+    th:nth-child(7), td:nth-child(7) { max-width: 25px; width: 25px; }   /* Akcja */
 
     th {
       background-color: #007acc;
@@ -484,10 +517,6 @@
 
     .scan-mode .action-btn {
       background-color: #28a745;
-    }
-
-    #resetBtn {
-      background-color: #dc3545;
     }
 
     .action-btn:disabled {
@@ -597,18 +626,27 @@
       input { height: 32px; padding: 5px 6px; font-size: 11px; }
       .btn-small, .action-btn { height: 32px; padding: 6px; font-size: 11px; }
       #codes-table { max-height: calc(100vh - 460px); }
-      table { font-size: 9px; min-width: 650px; }
+      table { font-size: 9px; min-width: 550px; }
       th, td { padding: 3px 1px; }
       th { font-size: 9px; padding: 4px 1px; }
       .user-type-selector { flex-direction: column; gap: 6px; }
       .stats-row { gap: 8px; font-size: 9px; }
       .stat-item { font-size: 9px; }
       .stat-value { font-size: 10px; }
+      .reset-icon { width: 20px; height: 20px; font-size: 10px; }
+      
+      /* Mniejsze szerokości na telefonie */
+      th:nth-child(1), td:nth-child(1) { max-width: 90px; width: 90px; }
+      th:nth-child(2), td:nth-child(2) { max-width: 40px; width: 40px; }
+      th:nth-child(3), td:nth-child(3) { max-width: 75px; width: 75px; }
+      th:nth-child(4), td:nth-child(4) { max-width: 65px; width: 65px; }
+      th:nth-child(5), td:nth-child(5) { max-width: 50px; width: 50px; }
+      th:nth-child(6), td:nth-child(6) { max-width: 70px; width: 70px; }
     }
 
     @media (max-width: 360px) {
       .input-row-compact { flex-direction: column; gap: 4px; }
-      table { min-width: 600px; }
+      table { min-width: 500px; }
       .stats-row { gap: 6px; }
     }
 
@@ -685,6 +723,7 @@
       <div class="logo">
         <div class="logo-r">R</div>
         <div class="logo-s">S</div>
+        <div class="reset-icon" onclick="resetAll()" title="Resetuj wszystkie dane">↻</div>
       </div>
       <div class="logo-subtitle">Rework Scan</div>
       <div class="user-info">
@@ -730,7 +769,7 @@
           <button class="btn-small btn-ok-ng" onclick="selectStatus('OK/NG')">OK/NG</button>
         </div>
 
-        <input id="note" placeholder="Adnotacja (NG) - wpisz i naciśnij Enter" disabled style="display: none;" />
+        <input id="note" placeholder="Adnotacja - wpisz i naciśnij Enter" disabled style="display: none;" />
       </div>
 
       <div id="statusInfo" style="display: none;">
@@ -793,7 +832,6 @@
 
       <div class="action-buttons" id="actionButtons" style="display: none;">
         <button class="action-btn" onclick="exportToExcel()" id="exportBtn">Export</button>
-        <button class="action-btn" onclick="resetAll()" id="resetBtn">Reset</button>
       </div>
 
       <div id="codes-table">
@@ -802,9 +840,9 @@
             <tr>
               <th onclick="sortTable('code')">Kod <span id="sort-code-icon" class="sort-icon">↓</span></th>
               <th id="statusHeader" onclick="sortTable('status')">Status <span id="sort-status-icon" class="sort-icon"></span></th>
-              <th id="statusAfterHeader" onclick="sortTable('statusAfterRework')">Status po reworku <span id="sort-statusAfter-icon" class="sort-icon"></span></th>
+              <th id="statusAfterHeader" onclick="sortTable('statusAfterRework')">Po rew <span id="sort-statusAfter-icon" class="sort-icon"></span></th>
               <th id="noteHeader" onclick="sortTable('note')">Uwagi <span id="sort-note-icon" class="sort-icon"></span></th>
-              <th id="inspectorHeader" onclick="sortTable('inspector')">Inspektor <span id="sort-inspector-icon" class="sort-icon"></span></th>
+              <th id="inspectorHeader" onclick="sortTable('inspector')">Insp <span id="sort-inspector-icon" class="sort-icon"></span></th>
               <th id="dateHeader" onclick="sortTable('date')">Data <span id="sort-date-icon" class="sort-icon"></span></th>
               <th style="width: 22px;" id="actionHeader">Akcja</th>
             </tr>
@@ -855,7 +893,6 @@
     const scanModeBtn = document.getElementById("scanModeBtn");
     const mainContent = document.getElementById("mainContent");
     const exportBtn = document.getElementById("exportBtn");
-    const resetBtn = document.getElementById("resetBtn");
     const actionHeader = document.getElementById("actionHeader");
     const modeSelector = document.getElementById("modeSelector");
     const inspectorControls = document.getElementById("inspectorControls");
@@ -1039,7 +1076,6 @@ function promptStatusChange(code, fieldToUpdate, message) {
       tempCode = code;
       currentStatusField = fieldToUpdate;
       
-      // Przy zmianie - tylko 2 opcje
       const okNgBtn = document.querySelector('.btn-ok-ng');
       if (okNgBtn) okNgBtn.style.display = 'none';
       
@@ -1351,12 +1387,10 @@ async function handleBarcodeInput(e) {
           return;
         }
 
-        // Przywracamy domyślnie widoczność przycisku OK/NG
         const okNgBtn = document.querySelector('.btn-ok-ng');
         if (okNgBtn) okNgBtn.style.display = 'block';
 
         if (matchedItem.status === "") {
-          // Pierwszy skan - dostępne wszystkie trzy przyciski
           tempCode = matchedItem.code;
           currentStatusField = 'status';
           buttons.style.display = "flex";
@@ -1368,27 +1402,15 @@ async function handleBarcodeInput(e) {
           }, 50);
         } 
         else {
-          // Drugi lub kolejny skan - zawsze tylko OK i NG
           tempCode = matchedItem.code;
+          currentStatusField = 'statusAfterRework';
           
-          // Sprawdzamy czy to drugi skan (brak statusAfterRework) czy kolejny
-          if (matchedItem.statusAfterRework === "") {
-            currentStatusField = 'statusAfterRework';
-          } else {
-            currentStatusField = 'statusAfterRework';
-          }
-          
-          // Ukrywamy przycisk OK/NG
           if (okNgBtn) okNgBtn.style.display = 'none';
           
           buttons.style.display = "flex";
           document.body.classList.add('buttons-visible');
           
-          if (matchedItem.statusAfterRework === "") {
-            showMessage(`Kod znaleziony! Wybierz status po reworku: OK lub NG (bez adnotacji)`, "info", 0);
-          } else {
-            showMessage(`Kod został już sprawdzony. Wybierz nowy status po reworku: OK lub NG`, "info", 0);
-          }
+          showMessage(`Kod znaleziony! Wybierz status po reworku: OK lub NG`, "info", 0);
           
           setTimeout(() => {
             const okBtn = document.querySelector('.btn-ok');
@@ -1415,7 +1437,7 @@ async function handleBarcodeInput(e) {
     }
   }
 }
- function selectStatus(status) {
+function selectStatus(status) {
       if (userRole === 'status') return;
       if (!tempCode) {
         showMessage("Brak kodu do przypisania statusu", "error", 3000);
@@ -1425,14 +1447,16 @@ async function handleBarcodeInput(e) {
       buttons.style.display = "none";
       document.body.classList.remove('buttons-visible');
       
-      // Przywracamy widoczność przycisku OK/NG na przyszłość (dla pierwszego skanu)
       const okNgBtn = document.querySelector('.btn-ok-ng');
       if (okNgBtn) okNgBtn.style.display = 'block';
       
-      if (status === "NG" && currentStatusField === 'status') {
+      if (status === "NG") {
         noteInput.style.display = "block";
         noteInput.disabled = false;
         noteInput.value = "";
+        noteInput.placeholder = currentStatusField === 'status' ? 
+          "Adnotacja dla NG (pierwszy skan) - wpisz i naciśnij Enter" : 
+          "Adnotacja dla NG (drugi skan) - wpisz i naciśnij Enter";
         noteInput.focus();
         showMessage("Wpisz adnotację i naciśnij Enter", "info", 0);
         const handleNoteKeyDown = (e) => {
@@ -1490,7 +1514,9 @@ async function handleBarcodeInput(e) {
         }
       } else {
         updateData.statusAfterRework = status;
-        if (existingEntry && existingEntry.note) {
+        if (status === "NG") {
+          updateData.note = note;
+        } else if (existingEntry && existingEntry.note) {
           updateData.note = existingEntry.note;
         }
       }
@@ -1595,16 +1621,16 @@ async function handleBarcodeInput(e) {
         if (userRole === 'status') {
           return `
             <tr class="${entry.isNew ? 'new-entry' : ''}">
-              <td style="font-size: 9px;">${entry.code || ''}</td>
-              <td class="${statusClass}" style="font-size: 9px; font-weight: ${entry.status ? 'bold' : 'normal'}">
+              <td style="font-size: 9px;" title="${entry.code || ''}">${(entry.code || '').substring(0, 15)}${(entry.code || '').length > 15 ? '…' : ''}</td>
+              <td class="${statusClass}" style="font-size: 9px; font-weight: ${entry.status ? 'bold' : 'normal'}" title="${statusText}">
                 ${statusText}
               </td>
-              <td class="${statusAfterClass}" style="font-size: 9px; font-weight: ${entry.statusAfterRework ? 'bold' : 'normal'}">
+              <td class="${statusAfterClass}" style="font-size: 9px; font-weight: ${entry.statusAfterRework ? 'bold' : 'normal'}" title="${statusAfterText}">
                 ${statusAfterText}
               </td>
-              <td style="font-size: 9px;">${entry.note || ''}</td>
-              <td style="font-size: 9px;">${entry.inspector || ''}</td>
-              <td style="font-size: 9px;">${entry.timestamp ? new Date(entry.timestamp).toLocaleString('pl-PL', { 
+              <td style="font-size: 9px;" title="${entry.note || ''}">${(entry.note || '').substring(0, 10)}${(entry.note || '').length > 10 ? '…' : ''}</td>
+              <td style="font-size: 9px;" title="${entry.inspector || ''}">${(entry.inspector || '').substring(0, 8)}${(entry.inspector || '').length > 8 ? '…' : ''}</td>
+              <td style="font-size: 9px;" title="${entry.timestamp ? new Date(entry.timestamp).toLocaleString('pl-PL') : ''}">${entry.timestamp ? new Date(entry.timestamp).toLocaleString('pl-PL', { 
                 month: '2-digit', 
                 day: '2-digit',
                 hour: '2-digit',
@@ -1615,16 +1641,16 @@ async function handleBarcodeInput(e) {
         } else {
           return `
             <tr class="${entry.isNew ? 'new-entry' : ''}">
-              <td style="font-size: 9px;">${entry.code || ''}</td>
-              <td class="${statusClass}" style="font-size: 9px; font-weight: ${entry.status ? 'bold' : 'normal'}">
+              <td style="font-size: 9px;" title="${entry.code || ''}">${(entry.code || '').substring(0, 15)}${(entry.code || '').length > 15 ? '…' : ''}</td>
+              <td class="${statusClass}" style="font-size: 9px; font-weight: ${entry.status ? 'bold' : 'normal'}" title="${statusText}">
                 ${statusText}
               </td>
-              <td class="${statusAfterClass}" style="font-size: 9px; font-weight: ${entry.statusAfterRework ? 'bold' : 'normal'}">
+              <td class="${statusAfterClass}" style="font-size: 9px; font-weight: ${entry.statusAfterRework ? 'bold' : 'normal'}" title="${statusAfterText}">
                 ${statusAfterText}
               </td>
-              <td style="font-size: 9px;">${entry.note || ''}</td>
-              <td style="font-size: 9px;">${entry.inspector || ''}</td>
-              <td style="font-size: 9px;">${entry.timestamp ? new Date(entry.timestamp).toLocaleString('pl-PL', { 
+              <td style="font-size: 9px;" title="${entry.note || ''}">${(entry.note || '').substring(0, 10)}${(entry.note || '').length > 10 ? '…' : ''}</td>
+              <td style="font-size: 9px;" title="${entry.inspector || ''}">${(entry.inspector || '').substring(0, 8)}${(entry.inspector || '').length > 8 ? '…' : ''}</td>
+              <td style="font-size: 9px;" title="${entry.timestamp ? new Date(entry.timestamp).toLocaleString('pl-PL') : ''}">${entry.timestamp ? new Date(entry.timestamp).toLocaleString('pl-PL', { 
                 month: '2-digit', 
                 day: '2-digit',
                 hour: '2-digit',
@@ -1667,7 +1693,7 @@ async function handleBarcodeInput(e) {
 
     function updateStats() {
       if (currentMode === 'rework') {
-        const total = reworkData.length; // Total - liczba wszystkich kodów
+        const total = reworkData.length;
         const scanned = reworkData.filter(entry => entry.status === "OK" || entry.status === "NG").length;
         const toScan = total - scanned;
         const ok = reworkData.filter(entry => entry.status === "OK").length;
@@ -1857,7 +1883,8 @@ async function handleBarcodeInput(e) {
         showMessage("Tryb podglądu - reset zablokowany", "error", 3000);
         return;
       }
-      if (confirm("Czy na pewno chcesz wyczyścić wszystkie dane w bieżącym trybie?")) {
+      
+      if (confirm("⚠️ UWAGA! Czy na pewno chcesz wyczyścić WSZYSTKIE dane w bieżącym trybie? Tej operacji nie można cofnąć.")) {
         if (currentMode === 'rework') {
           reworkData = [];
           await saveReworkDataToFirebase();
@@ -1919,7 +1946,6 @@ async function handleBarcodeInput(e) {
         showMessage("Anulowano", "info", 2000);
         barcodeInput.focus();
         
-        // Przywracamy przycisk OK/NG
         const okNgBtn = document.querySelector('.btn-ok-ng');
         if (okNgBtn) okNgBtn.style.display = 'block';
       }
@@ -1969,4 +1995,3 @@ async function handleBarcodeInput(e) {
   </script>
 </body>
 </html>
-
