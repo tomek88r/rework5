@@ -28,13 +28,19 @@
 
     .logo-container {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      padding: 8px;
+      padding: 6px 10px;
       background: white;
       box-shadow: 0 1px 5px rgba(0,0,0,0.1);
       position: relative;
       height: 50px;
+    }
+
+    .logo-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .logo {
@@ -72,33 +78,72 @@
       justify-content: center;
     }
 
-    .logo-subtitle {
-      font-size: 9px;
-      color: #666;
-      position: absolute;
-      bottom: 4px;
-      right: 10px;
-    }
-
-    .reset-icon {
-      background: #dc3545;
-      color: white;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
+    /* Małe przyciski obok logo */
+    .icon-btn {
+      background: transparent;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      font-weight: bold;
-      margin-left: 5px;
       cursor: pointer;
-      border: 1px solid #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      font-size: 14px;
+      font-weight: bold;
+      color: #555;
+      transition: all 0.2s;
     }
 
-    .reset-icon:hover {
+    .icon-btn:hover {
+      background-color: #f0f0f0;
+    }
+
+    .icon-btn.import-btn {
+      color: #28a745;
+    }
+
+    .icon-btn.export-btn {
+      color: #007acc;
+    }
+
+    .icon-btn.reset-icon {
+      background: #dc3545;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-left: 2px;
+    }
+
+    .icon-btn.reset-icon:hover {
       background: #c82333;
+    }
+
+    .logo-subtitle {
+      font-size: 9px;
+      color: #666;
+      margin-left: auto;
+      margin-right: 10px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .logout-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
     }
 
     .login-screen {
@@ -205,27 +250,6 @@
       margin: 8px 0;
       min-height: 18px;
       font-size: 12px;
-    }
-
-    .user-info {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10px;
-      color: #666;
-    }
-
-    .logout-btn {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 3px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      cursor: pointer;
     }
 
     .mode-selector {
@@ -383,6 +407,14 @@
       display: block;
     }
 
+    .message.repair-question {
+      background-color: #ffc107;
+      color: #212529;
+      display: block;
+      font-weight: bold;
+      border: 2px solid #e0a800;
+    }
+
     #stats-container {
       background: #f8f9fa;
       padding: 6px;
@@ -497,123 +529,23 @@
       font-size: 10px;
     }
 
+    /* Ukrywamy stare przyciski akcji */
     .action-buttons {
-      display: flex;
-      gap: 6px;
-      margin: 8px 0;
+      display: none !important;
     }
 
-    .action-btn {
-      flex: 1;
-      padding: 6px;
-      font-size: 12px;
-      border-radius: 6px;
-      background-color: #007acc;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      height: 34px;
-    }
-
-    .scan-mode .action-btn {
-      background-color: #28a745;
-    }
-
-    .action-btn:disabled {
-      background-color: #cccccc !important;
-      cursor: not-allowed;
-    }
-
-    .file-input-container {
-      margin: 8px 0;
-    }
-
-    .file-input-label {
-      display: block;
-      padding: 8px;
-      background-color: #f8f9fa;
-      border: 1px dashed #dee2e6;
-      border-radius: 6px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 12px;
+    /* Ukrywamy stary import */
+    #fileInputContainer {
+      display: none !important;
     }
 
     #file-name {
-      margin-top: 4px;
-      font-size: 10px;
-      color: #666;
-      text-align: center;
-    }
-
-    .confirmation-dialog {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
       display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      padding: 15px;
     }
 
-    .confirmation-content {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 280px;
-      width: 100%;
-      text-align: center;
-      font-size: 13px;
-    }
-
-    .confirmation-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 15px;
-    }
-
-    .confirmation-btn {
-      flex: 1;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      border: none;
-      font-weight: 600;
-    }
-
-    .confirm-btn {
-      background: #dc3545;
-      color: white;
-    }
-
-    .cancel-btn {
-      background: #6c757d;
-      color: white;
-    }
-
-    @keyframes highlight {
-      0% { background-color: rgba(40, 167, 69, 0.2); }
-      100% { background-color: transparent; }
-    }
-    
-    .new-entry {
-      animation: highlight 2s ease-out;
-    }
-
-    .remove-btn {
-      text-align: center;
-      color: #dc3545;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 12px;
-      padding: 2px;
-      min-width: 20px;
+    /* Nowy mały import - ukryty input */
+    #code-list-small {
+      display: none;
     }
 
     @media (max-width: 480px) {
@@ -634,7 +566,7 @@
       .stats-row { gap: 8px; font-size: 9px; }
       .stat-item { font-size: 9px; }
       .stat-value { font-size: 10px; }
-      .reset-icon { width: 20px; height: 20px; font-size: 10px; }
+      .icon-btn { width: 24px; height: 24px; font-size: 12px; }
       
       th:nth-child(1), td:nth-child(1) { max-width: 90px; width: 90px; }
       th:nth-child(2), td:nth-child(2) { max-width: 40px; width: 40px; }
@@ -720,10 +652,17 @@
 
   <div id="appContent" style="display: none;">
     <div class="logo-container">
-      <div class="logo">
-        <div class="logo-r">R</div>
-        <div class="logo-s">S</div>
-        <div class="reset-icon" onclick="resetAll()" title="Resetuj wszystkie dane">↻</div>
+      <div class="logo-left">
+        <div class="logo">
+          <div class="logo-r">R</div>
+          <div class="logo-s">S</div>
+        </div>
+        <!-- Małe przyciski import/export obok logo -->
+        <button class="icon-btn import-btn" id="smallImportBtn" title="Importuj kody" style="display: none;">📂</button>
+        <button class="icon-btn export-btn" id="smallExportBtn" title="Eksportuj do Excel" style="display: none;">📥</button>
+        <button class="icon-btn reset-icon" onclick="resetAll()" title="Resetuj wszystkie dane">↻</button>
+        <!-- Ukryty input do importu -->
+        <input type="file" id="code-list-small" accept=".xlsx,.csv" style="display: none;" />
       </div>
       <div class="logo-subtitle">Rework Scan</div>
       <div class="user-info">
@@ -755,6 +694,7 @@
           <input id="inspector" placeholder="Inspektor*" onkeydown="handleInspectorKeyDown(event)" oninput="validateForm()" />
         </div>
 
+        <!-- Stary import ukryty przez CSS -->
         <div id="fileInputContainer" class="file-input-container">
           <label for="code-list" class="file-input-label">Zaimportuj listę kodów (XLSX/CSV)</label>
           <input type="file" id="code-list" accept=".xlsx,.csv" style="display: none;" onchange="handleFileImport(event)" />
@@ -830,6 +770,7 @@
         </div>
       </div>
 
+      <!-- Stare przyciski akcji ukryte przez CSS -->
       <div class="action-buttons" id="actionButtons" style="display: none;">
         <button class="action-btn" onclick="exportToExcel()" id="exportBtn">Export</button>
       </div>
@@ -916,6 +857,11 @@
   const statusAfterHeader = document.getElementById("statusAfterHeader");
   const noteHeader = document.getElementById("noteHeader");
   const debugBtn = document.getElementById("debugBtn");
+  
+  // Nowe elementy - małe przyciski
+  const smallImportBtn = document.getElementById("smallImportBtn");
+  const smallExportBtn = document.getElementById("smallExportBtn");
+  const codeListSmall = document.getElementById("code-list-small");
 
   // Dane aplikacji
   let reworkData = [];
@@ -982,6 +928,10 @@
         switchMode('rework');
         setupRealtimeListeners();
         
+        // Pokaż małe przyciski dla inspektora
+        smallImportBtn.style.display = 'flex';
+        smallExportBtn.style.display = 'flex';
+        
         setTimeout(() => {
           if (!reworkNameInput.value) {
             reworkNameInput.focus();
@@ -996,6 +946,9 @@
         renderTable();
         updateStats();
         setupStatusRefresh();
+        // Ukryj małe przyciski dla statusu
+        smallImportBtn.style.display = 'none';
+        smallExportBtn.style.display = 'none';
       }
       
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -1080,11 +1033,15 @@
         validateForm();
         switchMode('rework');
         setupRealtimeListeners();
+        smallImportBtn.style.display = 'flex';
+        smallExportBtn.style.display = 'flex';
       } else {
         showStatusInfo();
         renderTable();
         updateStats();
         setupStatusRefresh();
+        smallImportBtn.style.display = 'none';
+        smallExportBtn.style.display = 'none';
       }
       
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -1119,11 +1076,15 @@
         validateForm();
         switchMode('rework');
         setupRealtimeListeners();
+        smallImportBtn.style.display = 'flex';
+        smallExportBtn.style.display = 'flex';
       } else {
         showStatusInfo();
         renderTable();
         updateStats();
         setupStatusRefresh();
+        smallImportBtn.style.display = 'none';
+        smallExportBtn.style.display = 'none';
       }
       
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -1140,7 +1101,6 @@ let saveTimeout = null;
 let lastSaveTime = 0;
 const SAVE_DEBOUNCE = 2000;
 
-// ⬇️ POPRAWIONA FUNKCJA - zapisuje TYLKO tytuł reworka, bez inspektora
 async function saveMetadataToFirebase() {
   try {
     const metadata = {
@@ -1193,7 +1153,6 @@ async function debouncedSave() {
   }, SAVE_DEBOUNCE);
 }
 
-// ⬇️ POPRAWIONA FUNKCJA - nie nadpisuje inspektora z Firebase
 async function loadDataFromFirebase() {
   try {
     const reworkRef = database.ref(getReworkDataPath());
@@ -1215,14 +1174,11 @@ async function loadDataFromFirebase() {
       const metadata = metadataSnapshot.val();
       if (metadata) {
         reworkNameInput.value = metadata.reworkName || '';
-        // NIE NADPISUJEMY inspectorInput.value – zostaje to co w localStorage
         currentReworkName.textContent = metadata.reworkName || '-';
-        // currentInspectorName bierzemy z localStorage
         currentInspectorName.textContent = localStorage.getItem('inspector') || '-';
       }
     }
     
-    // Wczytaj nazwę inspektora z localStorage (jeśli istnieje)
     const savedInspector = localStorage.getItem('inspector');
     if (savedInspector) {
       inspectorInput.value = savedInspector;
@@ -1236,7 +1192,6 @@ async function loadDataFromFirebase() {
   }
 }
 
-// ⬇️ POPRAWIONA FUNKCJA - nie aktualizuje inspektora w panelu statusu
 function setupRealtimeListeners() {
   if (firebaseListenerActive) {
     database.ref(getReworkDataPath()).off();
@@ -1261,7 +1216,6 @@ function setupRealtimeListeners() {
       const metadata = snapshot.val();
       if (metadata) {
         currentReworkName.textContent = metadata.reworkName || '-';
-        // currentInspectorName NIE aktualizujemy – zostaje localStorage
       }
     }
   });
@@ -1285,7 +1239,6 @@ function setupPermissions() {
   modeSelector.style.display = isInspector ? 'flex' : 'none';
   inspectorControls.style.display = isInspector ? 'block' : 'none';
   statusInfo.style.display = isStatus ? 'block' : 'none';
-  actionButtons.style.display = isInspector ? 'flex' : 'none';
   
   if (isStatus) {
     actionHeader.style.display = 'none';
@@ -1355,7 +1308,6 @@ function validateForm() {
   }
 }
 
-// ⬇️ POPRAWIONA - zapisuje inspektora TYLKO lokalnie
 async function handleReworkNameKeyDown(e) {
   if (userRole === 'status') return;
   if (e.key === "Enter") {
@@ -1368,14 +1320,13 @@ async function handleReworkNameKeyDown(e) {
   }
 }
 
-// ⬇️ POPRAWIONA - zapisuje inspektora TYLKO lokalnie
 async function handleInspectorKeyDown(e) {
   if (userRole === 'status') return;
   if (e.key === "Enter") {
     e.preventDefault();
     if (inspectorInput.value.trim().length >= 3) {
-      localStorage.setItem('inspector', inspectorInput.value.trim()); // ← ZAPIS LOKALNY
-      await saveMetadataToFirebase(); // zapisuje tylko reworkName
+      localStorage.setItem('inspector', inspectorInput.value.trim());
+      await saveMetadataToFirebase();
       if (validateForm()) barcodeInput.focus();
     }
   }
@@ -1386,9 +1337,6 @@ async function switchMode(mode) {
   currentMode = mode;
   reworkModeBtn.classList.toggle('active', mode === 'rework');
   scanModeBtn.classList.toggle('active', mode === 'scan');
-  if (userRole === 'inspector') fileInputContainer.style.display = mode === 'rework' ? 'block' : 'none';
-  buttons.style.display = 'none';
-  noteInput.style.display = 'none';
   mainContent.classList.toggle('scan-mode', mode === 'scan');
   await saveMetadataToFirebase();
   renderTable();
@@ -1397,28 +1345,57 @@ async function switchMode(mode) {
   if (validateForm()) setTimeout(() => barcodeInput.focus(), 100);
 }
 
-// Import plików
-async function handleFileImport(event) {
+// ⬇️ NOWA FUNKCJA IMPORTU DLA MAŁEGO PRZYCISKU
+async function handleSmallImportClick() {
   if (userRole === 'status') {
     showMessage("Tryb podglądu - import zablokowany", "error", 3000);
-    event.target.value = ''; return;
+    return;
   }
   if (!validateForm()) {
     showMessage("Wprowadź nazwę i inspektora przed importem", "error", 3000);
-    event.target.value = ''; return;
+    return;
   }
+  codeListSmall.click();
+}
+
+// ⬇️ NOWA FUNKCJA OBSŁUGI PLIKU Z MAŁEGO PRZYCISKU
+async function handleSmallFileImport(event) {
+  if (userRole === 'status') {
+    showMessage("Tryb podglądu - import zablokowany", "error", 3000);
+    event.target.value = '';
+    return;
+  }
+  if (!validateForm()) {
+    showMessage("Wprowadź nazwę i inspektora przed importem", "error", 3000);
+    event.target.value = '';
+    return;
+  }
+
   const file = event.target.files[0];
-  if (!file) { showMessage("Nie wybrano pliku", "error", 3000); return; }
-  fileNameDisplay.textContent = file.name;
+  if (!file) {
+    showMessage("Nie wybrano pliku", "error", 3000);
+    return;
+  }
+
+  showMessage("Ładowanie pliku...", "info", 0);
+
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
-      if (workbook.SheetNames.length === 0) throw new Error("Brak arkuszy w pliku");
+      
+      if (workbook.SheetNames.length === 0) {
+        throw new Error("Brak arkuszy w pliku");
+      }
+
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      if (!worksheet || !worksheet['!ref']) throw new Error("Arkusz jest pusty");
+      
+      if (!worksheet || !worksheet['!ref']) {
+        throw new Error("Arkusz jest pusty");
+      }
+
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       await processImportedData(jsonData);
     } catch (error) {
@@ -1426,24 +1403,38 @@ async function handleFileImport(event) {
       showMessage(`Błąd: ${error.message}`, "error", 5000);
     }
   };
-  reader.onerror = () => showMessage("Błąd odczytu pliku. Spróbuj ponownie.", "error", 3000);
+  
+  reader.onerror = function() {
+    showMessage("Błąd odczytu pliku. Spróbuj ponownie.", "error", 3000);
+  };
+  
   reader.readAsArrayBuffer(file);
+}
+
+// Funkcja importu (używana przez oba przyciski)
+async function handleFileImport(event) {
+  // Ta funkcja jest zachowana dla kompatybilności, ale używamy handleSmallFileImport
+  await handleSmallFileImport(event);
 }
 
 async function processImportedData(rawData) {
   const currentData = currentMode === 'rework' ? reworkData : scanData;
   const newCodes = [];
   let codesFound = 0, skippedRows = 0;
+  
   for (let i = 0; i < rawData.length; i++) {
     const row = rawData[i];
     if (!row || row.length === 0) continue;
+
     const code = String(row[0] || '').trim().toUpperCase();
+    
     if (code.length >= 14) {
       const exists = currentData.some(item => 
         currentMode === 'rework' 
           ? item.code.substring(0, 14) === code.substring(0, 14) 
           : item.code === code
       );
+      
       if (!exists) {
         newCodes.push({ 
           code: code, 
@@ -1456,9 +1447,15 @@ async function processImportedData(rawData) {
         });
         codesFound++;
       }
-    } else skippedRows++;
+    } else {
+      skippedRows++;
+    }
   }
-  if (codesFound === 0) throw new Error("Nie znaleziono poprawnych kodów w pliku (wymagane min. 14 znaków)");
+
+  if (codesFound === 0) {
+    throw new Error("Nie znaleziono poprawnych kodów w pliku (wymagane min. 14 znaków)");
+  }
+
   if (currentMode === 'rework') {
     reworkData = [...reworkData, ...newCodes];
     await saveReworkDataToFirebase();
@@ -1466,108 +1463,115 @@ async function processImportedData(rawData) {
     scanData = [...scanData, ...newCodes];
     await saveScanDataToFirebase();
   }
-  showMessage(`Zaimportowano ${codesFound} kodów (pominięto ${skippedRows} wierszy)`, "success", 3000);
+
+  showMessage(`✓ Zaimportowano ${codesFound} kodów (pominięto ${skippedRows})`, "success", 3000);
   renderTable();
   updateStats();
+  codeListSmall.value = ''; // Czyścimy input
 }
-  // Główna funkcja skanowania
-    async function handleBarcodeInput(e) {
-      if (userRole === 'status') {
-        e.preventDefault();
-        showMessage("Tryb podglądu - skanowanie zablokowane", "error", 3000);
-        return;
-      }
-      if (isProcessing) {
-        e.preventDefault();
-        showMessage("Przetwarzanie...", "info", 1000);
-        return;
-      }
-      if (!validateForm()) {
-        e.preventDefault();
-        showMessage("Wprowadź nazwę i inspektora przed skanowaniem", "error", 3000);
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const scannedCode = barcodeInput.value.trim().toUpperCase();
-        if (scannedCode.length < 14) {
-          showMessage("Kod musi mieć co najmniej 14 znaków", "error", 3000);
-          barcodeInput.value = "";
-          barcodeInput.focus();
-          return;
-        }
 
-        isProcessing = true;
-        try {
-          if (currentMode === 'rework') {
-            const scannedCodePrefix = scannedCode.substring(0, 14);
-            const matchedItem = reworkData.find(item => {
-              if (!item || !item.code) return false;
-              return item.code.substring(0, 14) === scannedCodePrefix;
-            });
-            
-            if (!matchedItem) {
-              showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 3000);
-              barcodeInput.value = "";
-              barcodeInput.focus();
-              isProcessing = false;
-              return;
-            }
+// Główna funkcja skanowania
+async function handleBarcodeInput(e) {
+  if (userRole === 'status') {
+    e.preventDefault();
+    showMessage("Tryb podglądu - skanowanie zablokowane", "error", 3000);
+    return;
+  }
+  if (isProcessing) {
+    e.preventDefault();
+    showMessage("Przetwarzanie...", "info", 1000);
+    return;
+  }
+  if (!validateForm()) {
+    e.preventDefault();
+    showMessage("Wprowadź nazwę i inspektora przed skanowaniem", "error", 3000);
+    return;
+  }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const scannedCode = barcodeInput.value.trim().toUpperCase();
+    if (scannedCode.length < 14) {
+      showMessage("Kod musi mieć co najmniej 14 znaków", "error", 3000);
+      barcodeInput.value = "";
+      barcodeInput.focus();
+      return;
+    }
 
-            const okNgBtn = document.querySelector('.btn-ok-ng');
-            if (okNgBtn) okNgBtn.style.display = 'block';
-
-            if (matchedItem.status === "") {
-              tempCode = matchedItem.code;
-              currentStatusField = 'status';
-              buttons.style.display = "flex";
-              document.body.classList.add('buttons-visible');
-              showMessage(`Kod znaleziony! Wybierz status (pierwszy skan): OK, NG lub OK/NG`, "info", 0);
-              setTimeout(() => {
-                const okBtn = document.querySelector('.btn-ok');
-                if (okBtn) okBtn.focus();
-              }, 50);
-            } 
-            else {
-              tempCode = matchedItem.code;
-              currentStatusField = 'statusAfterRework';
-              
-              if (okNgBtn) okNgBtn.style.display = 'none';
-              
-              buttons.style.display = "flex";
-              document.body.classList.add('buttons-visible');
-              
-              showMessage(`Kod znaleziony! Wybierz status po reworku: OK lub NG`, "info", 0);
-              
-              setTimeout(() => {
-                const okBtn = document.querySelector('.btn-ok');
-                if (okBtn) okBtn.focus();
-              }, 50);
-            }
-
-          } else {
-            const exists = scanData.some(item => item.code === scannedCode);
-            if (exists) {
-              showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 3000);
-              barcodeInput.value = "";
-              barcodeInput.focus();
-              isProcessing = false;
-              return;
-            }
-            tempCode = scannedCode;
-            await saveEntryScanMode(scannedCode);
-          }
-        } catch (error) {
-          console.error("Błąd skanowania:", error);
-          showMessage("Błąd przetwarzania kodu", "error", 3000);
+    isProcessing = true;
+    try {
+      if (currentMode === 'rework') {
+        const scannedCodePrefix = scannedCode.substring(0, 14);
+        const matchedItem = reworkData.find(item => {
+          if (!item || !item.code) return false;
+          return item.code.substring(0, 14) === scannedCodePrefix;
+        });
+        
+        if (!matchedItem) {
+          showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 3000);
           barcodeInput.value = "";
           barcodeInput.focus();
           isProcessing = false;
+          return;
         }
-      }
-    }
 
-    // Wybór statusu
+        const okNgBtn = document.querySelector('.btn-ok-ng');
+        if (okNgBtn) okNgBtn.style.display = 'block';
+
+        if (matchedItem.status === "") {
+          tempCode = matchedItem.code;
+          currentStatusField = 'status';
+          buttons.style.display = "flex";
+          document.body.classList.add('buttons-visible');
+          showMessage(`Kod znaleziony! Wybierz status (pierwszy skan): OK, NG lub OK/NG`, "info", 0);
+          setTimeout(() => {
+            const okBtn = document.querySelector('.btn-ok');
+            if (okBtn) okBtn.focus();
+          }, 50);
+        } 
+        else {
+          tempCode = matchedItem.code;
+          currentStatusField = 'statusAfterRework';
+          
+          if (okNgBtn) okNgBtn.style.display = 'none';
+          
+          buttons.style.display = "flex";
+          document.body.classList.add('buttons-visible');
+          
+          const firstStatus = matchedItem.status || "Nieznany";
+          const statusText = firstStatus === "OK" ? "OK" : (firstStatus === "NG" ? "NG" : firstStatus);
+          
+          message.className = "message repair-question";
+          message.textContent = `⚠️ Kod znaleziony. Jego status to: ${statusText}. Czy produkt został naprawiony?`;
+          message.style.display = "block";
+          
+          setTimeout(() => {
+            const okBtn = document.querySelector('.btn-ok');
+            if (okBtn) okBtn.focus();
+          }, 50);
+        }
+
+      } else {
+        const exists = scanData.some(item => item.code === scannedCode);
+        if (exists) {
+          showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 3000);
+          barcodeInput.value = "";
+          barcodeInput.focus();
+          isProcessing = false;
+          return;
+        }
+        tempCode = scannedCode;
+        await saveEntryScanMode(scannedCode);
+      }
+    } catch (error) {
+      console.error("Błąd skanowania:", error);
+      showMessage("Błąd przetwarzania kodu", "error", 3000);
+      barcodeInput.value = "";
+      barcodeInput.focus();
+      isProcessing = false;
+    }
+  }
+}
+ // Wybór statusu
     function selectStatus(status) {
       if (userRole === 'status') return;
       if (!tempCode) {
@@ -1580,6 +1584,9 @@ async function processImportedData(rawData) {
       
       const okNgBtn = document.querySelector('.btn-ok-ng');
       if (okNgBtn) okNgBtn.style.display = 'block';
+      
+      message.className = "message";
+      message.style.display = "none";
       
       if (status === "NG") {
         noteInput.style.display = "block";
@@ -1624,7 +1631,7 @@ async function processImportedData(rawData) {
       const existingEntry = codeIndex !== -1 ? (currentMode === 'rework' ? reworkData[codeIndex] : scanData[codeIndex]) : null;
       
       const updateData = {
-        inspector: inspectorInput.value.trim(), // ← zapisuje lokalnego inspektora do Firebase (przy kodzie)
+        inspector: inspectorInput.value.trim(),
         timestamp: Date.now(),
         isNew: true
       };
@@ -1679,7 +1686,6 @@ async function processImportedData(rawData) {
       noteInput.style.display = "none";
       noteInput.disabled = true;
       
-      const wasProcessing = isProcessing;
       tempCode = '';
       
       showMessage(`✓ Kod oznaczony jako ${status}`, "success", 2000);
@@ -1701,7 +1707,7 @@ async function processImportedData(rawData) {
       const newEntry = {
         code: code,
         status: "OK",
-        inspector: inspectorInput.value.trim(), // ← zapisuje lokalnego inspektora
+        inspector: inspectorInput.value.trim(),
         note: "",
         timestamp: Date.now(),
         isNew: true
@@ -1724,8 +1730,6 @@ async function processImportedData(rawData) {
 
     // Renderowanie tabeli
     function renderTable() {
-      console.log("Renderowanie tabeli, dane rework:", reworkData.length, "dane scan:", scanData.length);
-      
       const currentData = currentMode === 'rework' ? reworkData : scanData;
       const sortedData = [...currentData].sort((a, b) => {
         let aValue = a[currentSort.field];
@@ -1966,8 +1970,8 @@ async function processImportedData(rawData) {
       }
     }
 
-    // Eksport do Excel
-    function exportToExcel() {
+    // Eksport do Excel (używany przez mały przycisk)
+    async function exportToExcel() {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - eksport zablokowany", "error", 3000);
         return;
@@ -2099,6 +2103,8 @@ async function processImportedData(rawData) {
         noteInput.style.display = 'none';
         tempCode = '';
         isProcessing = false;
+        message.className = "message";
+        message.style.display = "none";
         showMessage("Anulowano", "info", 2000);
         barcodeInput.focus();
         
@@ -2107,16 +2113,15 @@ async function processImportedData(rawData) {
       }
     });
 
-    // ⬇️ POPRAWIONE - zapisuje tylko reworkName do Firebase, inspektor lokalnie
     reworkNameInput.addEventListener('input', async function() {
       if (userRole === 'inspector' && reworkNameInput.value.trim()) {
-        await saveMetadataToFirebase(); // zapisuje tylko reworkName
+        await saveMetadataToFirebase();
       }
     });
 
     inspectorInput.addEventListener('input', function() {
       if (userRole === 'inspector' && inspectorInput.value.trim().length >= 3) {
-        localStorage.setItem('inspector', inspectorInput.value.trim()); // ← ZAPIS LOKALNY
+        localStorage.setItem('inspector', inspectorInput.value.trim());
         validateForm();
       }
     });
@@ -2136,6 +2141,12 @@ async function processImportedData(rawData) {
     // Inicjalizacja
     window.onload = function() {
       checkSession();
+      
+      // Dodajemy event listenery dla małych przycisków
+      smallImportBtn.addEventListener('click', handleSmallImportClick);
+      smallExportBtn.addEventListener('click', exportToExcel);
+      codeListSmall.addEventListener('change', handleSmallFileImport);
+      
       document.querySelector('.btn-ok')?.addEventListener('click', function() {
         selectStatus('OK');
       });
