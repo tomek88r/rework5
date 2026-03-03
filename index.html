@@ -40,6 +40,32 @@
     .logo-left {
       display: flex;
       align-items: center;
+      gap: 12px;
+    }
+
+    .action-links {
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .action-link {
+      color: #6c757d;  /* szary */
+      cursor: pointer;
+      text-decoration: none;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .action-link:hover {
+      background-color: #e9ecef;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
       gap: 6px;
     }
 
@@ -78,54 +104,24 @@
       justify-content: center;
     }
 
-    /* Małe przyciski obok logo */
-    .icon-btn {
-      background: transparent;
-      border: none;
+    .reset-icon {
+      background: #dc3545;
+      color: white;
       width: 28px;
       height: 28px;
       border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: bold;
-      color: #555;
-      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s;
     }
 
-    .icon-btn:hover {
-      background-color: #f0f0f0;
-    }
-
-    .icon-btn.import-btn {
-      color: #28a745;
-    }
-
-    .icon-btn.export-btn {
-      color: #007acc;
-    }
-
-    .icon-btn.reset-icon {
-      background: #dc3545;
-      color: white;
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
-      font-size: 14px;
-      margin-left: 2px;
-    }
-
-    .icon-btn.reset-icon:hover {
+    .reset-icon:hover {
       background: #c82333;
-    }
-
-    .logo-subtitle {
-      font-size: 9px;
-      color: #666;
-      margin-left: auto;
-      margin-right: 10px;
     }
 
     .user-info {
@@ -415,6 +411,129 @@
       border: 2px solid #e0a800;
     }
 
+    /* Duże komunikaty OK/NG z animacją */
+    .status-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      font-size: 48px;
+      font-weight: 800;
+      padding: 20px 40px;
+      border-radius: 20px;
+      z-index: 4000;
+      opacity: 0;
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+      pointer-events: none;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .status-popup.ok {
+      background: rgba(40, 167, 69, 0.95);
+    }
+
+    .status-popup.ng {
+      background: rgba(220, 53, 69, 0.95);
+    }
+
+    .status-popup.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    /* Nowy, ładny confirmation dialog */
+    .custom-confirm-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .custom-confirm-box {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 320px;
+      overflow: hidden;
+      animation: slideUp 0.2s ease-out;
+    }
+
+    .custom-confirm-header {
+      background: #f8f9fa;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .custom-confirm-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #212529;
+    }
+
+    .custom-confirm-body {
+      padding: 20px;
+      font-size: 14px;
+      color: #495057;
+      line-height: 1.5;
+    }
+
+    .custom-confirm-footer {
+      display: flex;
+      border-top: 1px solid #e9ecef;
+    }
+
+    .custom-confirm-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .custom-confirm-btn.cancel {
+      background: white;
+      color: #6c757d;
+      border-right: 1px solid #e9ecef;
+    }
+
+    .custom-confirm-btn.cancel:hover {
+      background: #f8f9fa;
+    }
+
+    .custom-confirm-btn.confirm {
+      background: #dc3545;
+      color: white;
+    }
+
+    .custom-confirm-btn.confirm:hover {
+      background: #c82333;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
     #stats-container {
       background: #f8f9fa;
       padding: 6px;
@@ -453,12 +572,13 @@
     .stat-total { color: #007acc; }
     .stat-pending { color: #ffc107; }
 
+    /* Zwiększona wysokość tabeli - ok. 20 wierszy */
     #codes-table {
       margin-top: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      max-height: calc(100vh - 480px);
-      min-height: 180px;
+      max-height: 520px;  /* ok. 20 wierszy (26px na wiersz) */
+      min-height: 260px;
     }
 
     table {
@@ -552,13 +672,14 @@
       body { font-size: 12px; }
       .logo { font-size: 18px; }
       .logo-r, .logo-s { padding: 3px 5px; min-width: 28px; height: 28px; }
+      .action-links { font-size: 10px; gap: 4px; }
       main { padding: 6px; }
       .mode-selector { height: 32px; }
       .mode-btn { padding: 5px 2px; font-size: 11px; }
       .input-row-compact input { height: 32px; padding: 5px 6px; font-size: 11px; }
       input { height: 32px; padding: 5px 6px; font-size: 11px; }
       .btn-small, .action-btn { height: 32px; padding: 6px; font-size: 11px; }
-      #codes-table { max-height: calc(100vh - 460px); }
+      #codes-table { max-height: 400px; }
       table { font-size: 9px; min-width: 550px; }
       th, td { padding: 3px 1px; }
       th { font-size: 9px; padding: 4px 1px; }
@@ -566,7 +687,6 @@
       .stats-row { gap: 8px; font-size: 9px; }
       .stat-item { font-size: 9px; }
       .stat-value { font-size: 10px; }
-      .icon-btn { width: 24px; height: 24px; font-size: 12px; }
       
       th:nth-child(1), td:nth-child(1) { max-width: 90px; width: 90px; }
       th:nth-child(2), td:nth-child(2) { max-width: 40px; width: 40px; }
@@ -574,12 +694,15 @@
       th:nth-child(4), td:nth-child(4) { max-width: 65px; width: 65px; }
       th:nth-child(5), td:nth-child(5) { max-width: 50px; width: 50px; }
       th:nth-child(6), td:nth-child(6) { max-width: 70px; width: 70px; }
+
+      .status-popup { font-size: 36px; padding: 15px 30px; }
     }
 
     @media (max-width: 360px) {
       .input-row-compact { flex-direction: column; gap: 4px; }
       table { min-width: 500px; }
       .stats-row { gap: 6px; }
+      .action-links { flex-direction: column; gap: 2px; }
     }
 
     ::-webkit-scrollbar {
@@ -653,34 +776,51 @@
   <div id="appContent" style="display: none;">
     <div class="logo-container">
       <div class="logo-left">
-        <div class="logo">
-          <div class="logo-r">R</div>
-          <div class="logo-s">S</div>
+        <!-- Linki IMPORT / EXPORT jako tekst z lewej strony (szare, skrócone) -->
+        <div class="action-links">
+          <span class="action-link" id="importLink" style="display: none;">IMP</span>
+          <span class="action-link" id="exportLink" style="display: none;">EXP</span>
         </div>
-        <!-- Małe przyciski import/export obok logo -->
-        <button class="icon-btn import-btn" id="smallImportBtn" title="Importuj kody" style="display: none;">📂</button>
-        <button class="icon-btn export-btn" id="smallExportBtn" title="Eksportuj do Excel" style="display: none;">📥</button>
-        <button class="icon-btn reset-icon" onclick="resetAll()" title="Resetuj wszystkie dane">↻</button>
+        <!-- Logo RS -->
+        <div class="logo-area">
+          <div class="logo">
+            <div class="logo-r">R</div>
+            <div class="logo-s">S</div>
+          </div>
+          <!-- Przycisk RESET po prawej stronie logo -->
+          <div class="reset-icon" id="resetIcon" onclick="resetAll()" title="Resetuj wszystkie dane" style="display: none;">↻</div>
+        </div>
         <!-- Ukryty input do importu -->
         <input type="file" id="code-list-small" accept=".xlsx,.csv" style="display: none;" />
       </div>
-      <div class="logo-subtitle">Rework Scan</div>
+      <!-- Usunięty napis Rework Scan -->
       <div class="user-info">
         <span id="currentUser"></span>
         <button class="logout-btn" onclick="logout()">Wyloguj</button>
       </div>
     </div>
 
-    <div class="confirmation-dialog" id="confirmationDialog">
-      <div class="confirmation-content">
-        <h3 id="confirmationTitle" style="font-size: 14px; margin: 0 0 8px 0;">Czy na pewno chcesz usunąć ten kod?</h3>
-        <p id="confirmationMessage" style="margin: 0; color: #666; font-size: 12px;">Kod zostanie trwale usunięty z listy.</p>
-        <div class="confirmation-buttons">
-          <button class="confirmation-btn cancel-btn" onclick="cancelRemoval()">Anuluj</button>
-          <button class="confirmation-btn confirm-btn" onclick="confirmRemoval()">Potwierdź</button>
+    <!-- Duży popup OK/NG z animacją -->
+    <div class="status-popup" id="statusPopup"></div>
+
+    <!-- Nowy, ładny confirmation dialog -->
+    <div class="custom-confirm-overlay" id="customConfirmOverlay">
+      <div class="custom-confirm-box">
+        <div class="custom-confirm-header">
+          <h3 id="customConfirmTitle">Potwierdź akcję</h3>
+        </div>
+        <div class="custom-confirm-body" id="customConfirmMessage">
+          Czy na pewno chcesz wykonać tę operację?
+        </div>
+        <div class="custom-confirm-footer">
+          <button class="custom-confirm-btn cancel" id="customConfirmCancel">Anuluj</button>
+          <button class="custom-confirm-btn confirm" id="customConfirmOk">Potwierdź</button>
         </div>
       </div>
     </div>
+
+    <!-- Stary confirmation dialog (ukryty) -->
+    <div class="confirmation-dialog" id="confirmationDialog" style="display: none;"></div>
 
     <div class="mode-selector" id="modeSelector" style="display: none;">
       <button id="reworkModeBtn" class="mode-btn rework active" onclick="switchMode('rework')">Rework</button>
@@ -836,19 +976,14 @@
   const list = document.getElementById("list");
   const buttons = document.getElementById("buttons");
   const fileNameDisplay = document.getElementById("file-name");
-  const confirmationDialog = document.getElementById("confirmationDialog");
-  const confirmationTitle = document.getElementById("confirmationTitle");
-  const confirmationMessage = document.getElementById("confirmationMessage");
   const fileInputContainer = document.getElementById("fileInputContainer");
   const reworkModeBtn = document.getElementById("reworkModeBtn");
   const scanModeBtn = document.getElementById("scanModeBtn");
   const mainContent = document.getElementById("mainContent");
-  const exportBtn = document.getElementById("exportBtn");
   const actionHeader = document.getElementById("actionHeader");
   const modeSelector = document.getElementById("modeSelector");
   const inspectorControls = document.getElementById("inspectorControls");
   const statusInfo = document.getElementById("statusInfo");
-  const actionButtons = document.getElementById("actionButtons");
   const currentReworkName = document.getElementById("currentReworkName");
   const currentInspectorName = document.getElementById("currentInspectorName");
   const inspectorHeader = document.getElementById("inspectorHeader");
@@ -858,15 +993,24 @@
   const noteHeader = document.getElementById("noteHeader");
   const debugBtn = document.getElementById("debugBtn");
   
-  // Nowe elementy - małe przyciski
-  const smallImportBtn = document.getElementById("smallImportBtn");
-  const smallExportBtn = document.getElementById("smallExportBtn");
+  // Nowe elementy
+  const importLink = document.getElementById("importLink");
+  const exportLink = document.getElementById("exportLink");
+  const resetIcon = document.getElementById("resetIcon");
   const codeListSmall = document.getElementById("code-list-small");
+  const statusPopup = document.getElementById("statusPopup");
+  
+  // Nowy confirmation dialog
+  const customConfirmOverlay = document.getElementById("customConfirmOverlay");
+  const customConfirmTitle = document.getElementById("customConfirmTitle");
+  const customConfirmMessage = document.getElementById("customConfirmMessage");
+  const customConfirmCancel = document.getElementById("customConfirmCancel");
+  const customConfirmOk = document.getElementById("customConfirmOk");
 
   // Dane aplikacji
   let reworkData = [];
   let scanData = [];
-  let currentSort = { field: 'code', direction: 'asc' };
+  let currentSort = { field: 'date', direction: 'desc' };
   let codeToRemove = null;
   let currentMode = 'rework';
   let tempCode = '';
@@ -877,6 +1021,15 @@
   let firebaseListenerActive = false;
   let confirmCallback = null;
   let currentStatusField = 'status';
+
+  // Funkcja do wyświetlania dużego popupa OK/NG
+  function showStatusPopup(status) {
+    statusPopup.textContent = status;
+    statusPopup.className = 'status-popup ' + (status === 'OK' ? 'ok' : 'ng') + ' show';
+    setTimeout(() => {
+      statusPopup.classList.remove('show');
+    }, 1500);
+  }
 
   // Funkcje logowania z Firebase Auth
   function selectUserType(type) {
@@ -928,9 +1081,10 @@
         switchMode('rework');
         setupRealtimeListeners();
         
-        // Pokaż małe przyciski dla inspektora
-        smallImportBtn.style.display = 'flex';
-        smallExportBtn.style.display = 'flex';
+        // Pokaż linki i reset dla inspektora
+        importLink.style.display = 'inline';
+        exportLink.style.display = 'inline';
+        resetIcon.style.display = 'flex';
         
         setTimeout(() => {
           if (!reworkNameInput.value) {
@@ -946,9 +1100,10 @@
         renderTable();
         updateStats();
         setupStatusRefresh();
-        // Ukryj małe przyciski dla statusu
-        smallImportBtn.style.display = 'none';
-        smallExportBtn.style.display = 'none';
+        // Ukryj linki i reset dla statusu
+        importLink.style.display = 'none';
+        exportLink.style.display = 'none';
+        resetIcon.style.display = 'none';
       }
       
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -972,126 +1127,134 @@
   }
 
   async function logout() {
-    if (confirm('Czy na pewno chcesz się wylogować?')) {
-      try {
-        await auth.signOut();
-        
-        if (firebaseListenerActive) {
-          database.ref(getReworkDataPath()).off();
-          database.ref(getScanDataPath()).off();
-          database.ref(getMetadataPath()).off();
-          firebaseListenerActive = false;
+    showCustomConfirm(
+      "Potwierdź wylogowanie",
+      "Czy na pewno chcesz się wylogować?",
+      async () => {
+        try {
+          await auth.signOut();
+          
+          if (firebaseListenerActive) {
+            database.ref(getReworkDataPath()).off();
+            database.ref(getScanDataPath()).off();
+            database.ref(getMetadataPath()).off();
+            firebaseListenerActive = false;
+          }
+          
+          if (statusRefreshInterval) {
+            clearInterval(statusRefreshInterval);
+            statusRefreshInterval = null;
+          }
+          
+          if (saveTimeout) {
+            clearTimeout(saveTimeout);
+            saveTimeout = null;
+          }
+          
+          currentUser = null;
+          userRole = null;
+          appContent.style.display = 'none';
+          loginScreen.style.display = 'flex';
+          
+          document.getElementById('loginPassword').value = '';
+          loginError.textContent = '';
+          debugBtn.style.display = 'none';
+          
+          sessionStorage.removeItem('loggedIn');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('userRole');
+          
+        } catch (error) {
+          console.error('Błąd wylogowania:', error);
         }
-        
-        if (statusRefreshInterval) {
-          clearInterval(statusRefreshInterval);
-          statusRefreshInterval = null;
-        }
-        
-        if (saveTimeout) {
-          clearTimeout(saveTimeout);
-          saveTimeout = null;
-        }
-        
-        currentUser = null;
-        userRole = null;
-        appContent.style.display = 'none';
-        loginScreen.style.display = 'flex';
-        
-        document.getElementById('loginPassword').value = '';
-        loginError.textContent = '';
-        debugBtn.style.display = 'none';
-        
-        sessionStorage.removeItem('loggedIn');
-        sessionStorage.removeItem('user');
-        sessionStorage.removeItem('userRole');
-        
-      } catch (error) {
-        console.error('Błąd wylogowania:', error);
       }
+    );
+  }
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    if (user.email === USER_EMAILS.inspektor) {
+      userRole = 'inspector';
+      currentUser = 'inspektor';
+    } else if (user.email === USER_EMAILS.status) {
+      userRole = 'status';
+      currentUser = 'status';
+    }
+    
+    currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+    loginScreen.style.display = 'none';
+    appContent.style.display = 'block';
+    
+    await loadDataFromFirebase();
+    setupPermissions();
+    
+    if (userRole === 'inspector') {
+      validateForm();
+      switchMode('rework');
+      setupRealtimeListeners();
+      importLink.style.display = 'inline';
+      exportLink.style.display = 'inline';
+      resetIcon.style.display = 'flex';
+    } else {
+      showStatusInfo();
+      renderTable();
+      updateStats();
+      setupStatusRefresh();
+      importLink.style.display = 'none';
+      exportLink.style.display = 'none';
+      resetIcon.style.display = 'none';
+    }
+    
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      debugBtn.style.display = 'block';
+    }
+    
+    sessionStorage.setItem('loggedIn', 'true');
+    sessionStorage.setItem('user', currentUser);
+    sessionStorage.setItem('userRole', userRole);
+  }
+});
+
+async function checkSession() {
+  const user = auth.currentUser;
+  if (user) {
+    if (user.email === USER_EMAILS.inspektor) {
+      userRole = 'inspector';
+      currentUser = 'inspektor';
+    } else if (user.email === USER_EMAILS.status) {
+      userRole = 'status';
+      currentUser = 'status';
+    }
+    
+    currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+    loginScreen.style.display = 'none';
+    appContent.style.display = 'block';
+    
+    await loadDataFromFirebase();
+    setupPermissions();
+    
+    if (userRole === 'inspector') {
+      validateForm();
+      switchMode('rework');
+      setupRealtimeListeners();
+      importLink.style.display = 'inline';
+      exportLink.style.display = 'inline';
+      resetIcon.style.display = 'flex';
+    } else {
+      showStatusInfo();
+      renderTable();
+      updateStats();
+      setupStatusRefresh();
+      importLink.style.display = 'none';
+      exportLink.style.display = 'none';
+      resetIcon.style.display = 'none';
+    }
+    
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      debugBtn.style.display = 'block';
     }
   }
+}
 
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      if (user.email === USER_EMAILS.inspektor) {
-        userRole = 'inspector';
-        currentUser = 'inspektor';
-      } else if (user.email === USER_EMAILS.status) {
-        userRole = 'status';
-        currentUser = 'status';
-      }
-      
-      currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
-      loginScreen.style.display = 'none';
-      appContent.style.display = 'block';
-      
-      await loadDataFromFirebase();
-      setupPermissions();
-      
-      if (userRole === 'inspector') {
-        validateForm();
-        switchMode('rework');
-        setupRealtimeListeners();
-        smallImportBtn.style.display = 'flex';
-        smallExportBtn.style.display = 'flex';
-      } else {
-        showStatusInfo();
-        renderTable();
-        updateStats();
-        setupStatusRefresh();
-        smallImportBtn.style.display = 'none';
-        smallExportBtn.style.display = 'none';
-      }
-      
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        debugBtn.style.display = 'block';
-      }
-      
-      sessionStorage.setItem('loggedIn', 'true');
-      sessionStorage.setItem('user', currentUser);
-      sessionStorage.setItem('userRole', userRole);
-    }
-  });
-
-  async function checkSession() {
-    const user = auth.currentUser;
-    if (user) {
-      if (user.email === USER_EMAILS.inspektor) {
-        userRole = 'inspector';
-        currentUser = 'inspektor';
-      } else if (user.email === USER_EMAILS.status) {
-        userRole = 'status';
-        currentUser = 'status';
-      }
-      
-      currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
-      loginScreen.style.display = 'none';
-      appContent.style.display = 'block';
-      
-      await loadDataFromFirebase();
-      setupPermissions();
-      
-      if (userRole === 'inspector') {
-        validateForm();
-        switchMode('rework');
-        setupRealtimeListeners();
-        smallImportBtn.style.display = 'flex';
-        smallExportBtn.style.display = 'flex';
-      } else {
-        showStatusInfo();
-        renderTable();
-        updateStats();
-        setupStatusRefresh();
-        smallImportBtn.style.display = 'none';
-        smallExportBtn.style.display = 'none';
-      }
-      
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        debugBtn.style.display = 'block';
-      }
-    }
-  }
 // Funkcje Firebase Database
 function getReworkDataPath() { return 'reworkData'; }
 function getScanDataPath() { return 'scanData'; }
@@ -1258,15 +1421,31 @@ function showStatusInfo() {
   currentInspectorName.textContent = localStorage.getItem('inspector') || '-';
 }
 
-function showConfirmation(title, message, onConfirm) {
-  confirmationTitle.textContent = title;
-  confirmationMessage.textContent = message;
-  confirmCallback = onConfirm;
-  confirmationDialog.style.display = 'flex';
+// Funkcja do ładnego confirm dialog
+function showCustomConfirm(title, message, onConfirm) {
+  customConfirmTitle.textContent = title;
+  customConfirmMessage.textContent = message;
+  customConfirmOverlay.style.display = 'flex';
+  
+  const handleConfirm = () => {
+    customConfirmOverlay.style.display = 'none';
+    customConfirmOk.removeEventListener('click', handleConfirm);
+    customConfirmCancel.removeEventListener('click', handleCancel);
+    onConfirm();
+  };
+  
+  const handleCancel = () => {
+    customConfirmOverlay.style.display = 'none';
+    customConfirmOk.removeEventListener('click', handleConfirm);
+    customConfirmCancel.removeEventListener('click', handleCancel);
+  };
+  
+  customConfirmOk.addEventListener('click', handleConfirm);
+  customConfirmCancel.addEventListener('click', handleCancel);
 }
 
 function promptStatusChange(code, fieldToUpdate, message) {
-  showConfirmation(
+  showCustomConfirm(
     "Zmiana statusu",
     message,
     async () => {
@@ -1345,8 +1524,8 @@ async function switchMode(mode) {
   if (validateForm()) setTimeout(() => barcodeInput.focus(), 100);
 }
 
-// ⬇️ NOWA FUNKCJA IMPORTU DLA MAŁEGO PRZYCISKU
-async function handleSmallImportClick() {
+// Funkcje importu
+async function handleImportClick() {
   if (userRole === 'status') {
     showMessage("Tryb podglądu - import zablokowany", "error", 3000);
     return;
@@ -1358,8 +1537,7 @@ async function handleSmallImportClick() {
   codeListSmall.click();
 }
 
-// ⬇️ NOWA FUNKCJA OBSŁUGI PLIKU Z MAŁEGO PRZYCISKU
-async function handleSmallFileImport(event) {
+async function handleFileImport(event) {
   if (userRole === 'status') {
     showMessage("Tryb podglądu - import zablokowany", "error", 3000);
     event.target.value = '';
@@ -1409,12 +1587,6 @@ async function handleSmallFileImport(event) {
   };
   
   reader.readAsArrayBuffer(file);
-}
-
-// Funkcja importu (używana przez oba przyciski)
-async function handleFileImport(event) {
-  // Ta funkcja jest zachowana dla kompatybilności, ale używamy handleSmallFileImport
-  await handleSmallFileImport(event);
 }
 
 async function processImportedData(rawData) {
@@ -1467,7 +1639,7 @@ async function processImportedData(rawData) {
   showMessage(`✓ Zaimportowano ${codesFound} kodów (pominięto ${skippedRows})`, "success", 3000);
   renderTable();
   updateStats();
-  codeListSmall.value = ''; // Czyścimy input
+  codeListSmall.value = '';
 }
 
 // Główna funkcja skanowania
@@ -1571,138 +1743,142 @@ async function handleBarcodeInput(e) {
     }
   }
 }
- // Wybór statusu
-    function selectStatus(status) {
-      if (userRole === 'status') return;
-      if (!tempCode) {
-        showMessage("Brak kodu do przypisania statusu", "error", 3000);
-        return;
+
+// Wybór statusu
+function selectStatus(status) {
+  if (userRole === 'status') return;
+  if (!tempCode) {
+    showMessage("Brak kodu do przypisania statusu", "error", 3000);
+    return;
+  }
+  
+  buttons.style.display = "none";
+  document.body.classList.remove('buttons-visible');
+  
+  const okNgBtn = document.querySelector('.btn-ok-ng');
+  if (okNgBtn) okNgBtn.style.display = 'block';
+  
+  message.className = "message";
+  message.style.display = "none";
+  
+  if (status === "NG") {
+    noteInput.style.display = "block";
+    noteInput.disabled = false;
+    noteInput.value = "";
+    noteInput.placeholder = currentStatusField === 'status' ? 
+      "Adnotacja dla NG (pierwszy skan) - wpisz i naciśnij Enter" : 
+      "Adnotacja dla NG (drugi skan) - wpisz i naciśnij Enter";
+    noteInput.focus();
+    showMessage("Wpisz adnotację i naciśnij Enter", "info", 0);
+    const handleNoteKeyDown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const note = noteInput.value.trim();
+        saveEntry(status, note);
+        noteInput.removeEventListener("keydown", handleNoteKeyDown);
       }
-      
-      buttons.style.display = "none";
-      document.body.classList.remove('buttons-visible');
-      
-      const okNgBtn = document.querySelector('.btn-ok-ng');
-      if (okNgBtn) okNgBtn.style.display = 'block';
-      
-      message.className = "message";
-      message.style.display = "none";
-      
-      if (status === "NG") {
-        noteInput.style.display = "block";
-        noteInput.disabled = false;
-        noteInput.value = "";
-        noteInput.placeholder = currentStatusField === 'status' ? 
-          "Adnotacja dla NG (pierwszy skan) - wpisz i naciśnij Enter" : 
-          "Adnotacja dla NG (drugi skan) - wpisz i naciśnij Enter";
-        noteInput.focus();
-        showMessage("Wpisz adnotację i naciśnij Enter", "info", 0);
-        const handleNoteKeyDown = (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            const note = noteInput.value.trim();
-            saveEntry(status, note);
-            noteInput.removeEventListener("keydown", handleNoteKeyDown);
-          }
-        };
-        noteInput.addEventListener("keydown", handleNoteKeyDown);
-      } else if (status === "OK/NG") {
-        saveEntry("OK/NG", "");
-      } else {
-        saveEntry(status, "");
-      }
+    };
+    noteInput.addEventListener("keydown", handleNoteKeyDown);
+  } else if (status === "OK/NG") {
+    saveEntry("OK/NG", "");
+  } else {
+    saveEntry(status, "");
+  }
+}
+
+// Zapis statusu - DODANO WYWOŁANIE showStatusPopup
+async function saveEntry(status, note) {
+  if (!tempCode) {
+    showMessage("Brak kodu do zapisania", "error", 3000);
+    return;
+  }
+
+  let codeIndex = -1;
+  if (currentMode === 'rework') {
+    const tempCodePrefix = tempCode.substring(0, 14);
+    codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === tempCodePrefix);
+  } else {
+    codeIndex = scanData.findIndex(item => item.code === tempCode);
+  }
+  
+  const existingEntry = codeIndex !== -1 ? (currentMode === 'rework' ? reworkData[codeIndex] : scanData[codeIndex]) : null;
+  
+  const updateData = {
+    inspector: inspectorInput.value.trim(),
+    timestamp: Date.now(),
+    isNew: true
+  };
+  
+  if (currentStatusField === 'status') {
+    if (status === "OK") {
+      updateData.status = "OK";
+      updateData.statusAfterRework = "OK";
+    } else if (status === "NG") {
+      updateData.status = "NG";
+      updateData.note = note;
+    } else if (status === "OK/NG") {
+      updateData.status = "NG";
+      updateData.statusAfterRework = "OK";
     }
-
-    // Zapis statusu
-    async function saveEntry(status, note) {
-      if (!tempCode) {
-        showMessage("Brak kodu do zapisania", "error", 3000);
-        return;
-      }
-
-      let codeIndex = -1;
-      if (currentMode === 'rework') {
-        const tempCodePrefix = tempCode.substring(0, 14);
-        codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === tempCodePrefix);
-      } else {
-        codeIndex = scanData.findIndex(item => item.code === tempCode);
-      }
-      
-      const existingEntry = codeIndex !== -1 ? (currentMode === 'rework' ? reworkData[codeIndex] : scanData[codeIndex]) : null;
-      
-      const updateData = {
-        inspector: inspectorInput.value.trim(),
-        timestamp: Date.now(),
-        isNew: true
+    
+    if (existingEntry && existingEntry.note && status !== "NG") {
+      updateData.note = existingEntry.note;
+    }
+  } else {
+    updateData.statusAfterRework = status;
+    if (status === "NG") {
+      updateData.note = note;
+    } else if (existingEntry && existingEntry.note) {
+      updateData.note = existingEntry.note;
+    }
+  }
+  
+  if (codeIndex !== -1) {
+    if (currentMode === 'rework') {
+      reworkData[codeIndex] = {
+        ...reworkData[codeIndex],
+        ...updateData
       };
-      
-      if (currentStatusField === 'status') {
-        if (status === "OK") {
-          updateData.status = "OK";
-          updateData.statusAfterRework = "OK";
-        } else if (status === "NG") {
-          updateData.status = "NG";
-          updateData.note = note;
-        } else if (status === "OK/NG") {
-          updateData.status = "NG";
-          updateData.statusAfterRework = "OK";
-        }
-        
-        if (existingEntry && existingEntry.note && status !== "NG") {
-          updateData.note = existingEntry.note;
-        }
-      } else {
-        updateData.statusAfterRework = status;
-        if (status === "NG") {
-          updateData.note = note;
-        } else if (existingEntry && existingEntry.note) {
-          updateData.note = existingEntry.note;
-        }
-      }
-      
-      if (codeIndex !== -1) {
-        if (currentMode === 'rework') {
-          reworkData[codeIndex] = {
-            ...reworkData[codeIndex],
-            ...updateData
-          };
-        } else {
-          scanData[codeIndex] = {
-            ...scanData[codeIndex],
-            ...updateData
-          };
-        }
-      } else if (currentMode === 'scan') {
-        const newEntry = {
-          code: tempCode,
-          ...updateData
-        };
-        scanData.push(newEntry);
-      }
-      
-      await debouncedSave();
-      
-      noteInput.value = "";
-      noteInput.style.display = "none";
-      noteInput.disabled = true;
-      
-      tempCode = '';
-      
-      showMessage(`✓ Kod oznaczony jako ${status}`, "success", 2000);
-      renderTable();
-      updateStats();
-      
-      barcodeInput.value = "";
-      isProcessing = false;
-      
-      setTimeout(() => {
-        if (validateForm()) {
-          barcodeInput.focus();
-        }
-      }, 100);
+    } else {
+      scanData[codeIndex] = {
+        ...scanData[codeIndex],
+        ...updateData
+      };
     }
-
-    // Funkcja dla trybu SCAN
+  } else if (currentMode === 'scan') {
+    const newEntry = {
+      code: tempCode,
+      ...updateData
+    };
+    scanData.push(newEntry);
+  }
+  
+  await debouncedSave();
+  
+  noteInput.value = "";
+  noteInput.style.display = "none";
+  noteInput.disabled = true;
+  
+  tempCode = '';
+  
+  // Wyświetl duży popup z wybranym statusem
+  const displayStatus = (status === "OK/NG") ? "OK/NG" : status;
+  showStatusPopup(displayStatus);
+  
+  showMessage(`✓ Kod oznaczony jako ${status}`, "success", 2000);
+  renderTable();
+  updateStats();
+  
+  barcodeInput.value = "";
+  isProcessing = false;
+  
+  setTimeout(() => {
+    if (validateForm()) {
+      barcodeInput.focus();
+    }
+  }, 100);
+}
+ // Funkcja dla trybu SCAN
     async function saveEntryScanMode(code) {
       const newEntry = {
         code: code,
@@ -1714,6 +1890,10 @@ async function handleBarcodeInput(e) {
       };
       scanData.push(newEntry);
       await debouncedSave();
+      
+      // Wyświetl duży popup
+      showStatusPopup("OK");
+      
       showMessage("✓ Kod zeskanowany!", "success", 2000);
       renderTable();
       updateStats();
@@ -1728,29 +1908,22 @@ async function handleBarcodeInput(e) {
       }, 100);
     }
 
-    // Renderowanie tabeli
+    // Renderowanie tabeli - sortowanie po dacie malejąco
     function renderTable() {
       const currentData = currentMode === 'rework' ? reworkData : scanData;
+      
+      // Sortowanie: najpierw po dacie (malejąco), potem po kodzie
       const sortedData = [...currentData].sort((a, b) => {
-        let aValue = a[currentSort.field];
-        let bValue = b[currentSort.field];
+        const aTime = a.timestamp || 0;
+        const bTime = b.timestamp || 0;
         
-        if (currentSort.field === 'date') {
-          aValue = a.timestamp || 0;
-          bValue = b.timestamp || 0;
-        } else if (currentSort.field === 'statusAfterRework') {
-          aValue = a.statusAfterRework || "";
-          bValue = b.statusAfterRework || "";
-        } else {
-          aValue = aValue || "";
-          bValue = bValue || "";
+        if (aTime !== bTime) {
+          return bTime - aTime; // malejąco - najnowsze na górze
         }
         
-        if (currentSort.direction === 'asc') {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
+        const aCode = a.code || "";
+        const bCode = b.code || "";
+        return aCode.localeCompare(bCode);
       });
 
       const displayData = currentMode === 'scan' 
@@ -1821,7 +1994,7 @@ async function handleBarcodeInput(e) {
       }
     }
 
-    // Sortowanie
+    // Sortowanie (używane tylko przy kliknięciu w nagłówek)
     function sortTable(field) {
       if (currentSort.field === field) {
         currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
@@ -1864,12 +2037,12 @@ async function handleBarcodeInput(e) {
         document.getElementById("toScanCount").textContent = toScan;
         document.getElementById("okCount").textContent = ok;
         document.getElementById("ngCount").textContent = ng;
-        document.getElementById("ngPercent").textContent = percent;
+        document.getElementById("ngPercent").textContent = percent + '%';
         
         document.getElementById("afterReworkCount").textContent = afterReworkCount;
         document.getElementById("afterReworkOkCount").textContent = afterReworkOk;
         document.getElementById("afterReworkNgCount").textContent = afterReworkNg;
-        document.getElementById("afterReworkNgPercent").textContent = afterReworkPercent;
+        document.getElementById("afterReworkNgPercent").textContent = afterReworkPercent + '%';
 
         document.getElementById("toScanContainer").style.display = "flex";
         document.getElementById("okContainer").style.display = "flex";
@@ -1895,7 +2068,7 @@ async function handleBarcodeInput(e) {
       }
     }
 
-    // Usuwanie/reset
+    // Usuwanie/reset - używamy nowego ładnego confirm dialog
     function showRemoveConfirmation(code) {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - edycja zablokowana", "error", 3000);
@@ -1903,34 +2076,18 @@ async function handleBarcodeInput(e) {
       }
       codeToRemove = code;
       
-      if (currentMode === 'rework') {
-        confirmationTitle.textContent = "Czy na pewno chcesz zresetować status?";
-        confirmationMessage.textContent = "Status kodu (pierwszy i po reworku) zostanie zresetowany.";
-      } else {
-        confirmationTitle.textContent = "Czy na pewno chcesz usunąć ten kod?";
-        confirmationMessage.textContent = "Kod zostanie trwale usunięty z listy.";
-      }
-      confirmCallback = null;
-      confirmationDialog.style.display = 'flex';
-    }
-
-    function cancelRemoval() {
-      confirmationDialog.style.display = 'none';
-      codeToRemove = null;
-      confirmCallback = null;
-      barcodeInput.focus();
+      const title = currentMode === 'rework' ? 
+        "Resetowanie statusu" : 
+        "Usuwanie kodu";
+      
+      const message = currentMode === 'rework' ? 
+        "Czy na pewno chcesz zresetować status tego kodu (pierwszy i po reworku)?" : 
+        "Czy na pewno chcesz trwale usunąć ten kod z listy?";
+      
+      showCustomConfirm(title, message, confirmRemoval);
     }
 
     async function confirmRemoval() {
-      if (confirmCallback) {
-        confirmCallback();
-        confirmationDialog.style.display = 'none';
-        confirmCallback = null;
-        codeToRemove = null;
-        barcodeInput.focus();
-        return;
-      }
-      
       if (!codeToRemove) return;
       
       let success = false;
@@ -1962,7 +2119,6 @@ async function handleBarcodeInput(e) {
       }
       
       if (success) {
-        confirmationDialog.style.display = 'none';
         renderTable();
         updateStats();
         codeToRemove = null;
@@ -1970,7 +2126,7 @@ async function handleBarcodeInput(e) {
       }
     }
 
-    // Eksport do Excel (używany przez mały przycisk)
+    // Eksport do Excel
     async function exportToExcel() {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - eksport zablokowany", "error", 3000);
@@ -2044,22 +2200,23 @@ async function handleBarcodeInput(e) {
         return;
       }
       
-      if (confirm("⚠️ UWAGA! Czy na pewno chcesz wyczyścić WSZYSTKIE dane w bieżącym trybie? Tej operacji nie można cofnąć.")) {
-        if (currentMode === 'rework') {
-          reworkData = [];
-          await saveReworkDataToFirebase();
+      showCustomConfirm(
+        "⚠️ UWAGA! Reset danych",
+        `Czy na pewno chcesz wyczyścić WSZYSTKIE dane w bieżącym trybie? Tej operacji nie można cofnąć.`,
+        async () => {
+          if (currentMode === 'rework') {
+            reworkData = [];
+            await saveReworkDataToFirebase();
+          } else {
+            scanData = [];
+            await saveScanDataToFirebase();
+          }
           renderTable();
           updateStats();
           showMessage("Wyczyszczono wszystkie dane", "success", 3000);
-        } else {
-          scanData = [];
-          await saveScanDataToFirebase();
-          renderTable();
-          updateStats();
-          showMessage("Wyczyszczono wszystkie dane", "success", 3000);
+          setTimeout(() => barcodeInput.focus(), 300);
         }
-        setTimeout(() => barcodeInput.focus(), 300);
-      }
+      );
     }
 
     // Pomocnicze
@@ -2088,6 +2245,7 @@ async function handleBarcodeInput(e) {
       console.log("Current status field:", currentStatusField);
       console.log("Form valid:", validateForm());
       console.log("Inspector z localStorage:", localStorage.getItem('inspector'));
+      console.log("Sortowanie:", currentSort);
       console.log("==================");
     }
 
@@ -2142,10 +2300,11 @@ async function handleBarcodeInput(e) {
     window.onload = function() {
       checkSession();
       
-      // Dodajemy event listenery dla małych przycisków
-      smallImportBtn.addEventListener('click', handleSmallImportClick);
-      smallExportBtn.addEventListener('click', exportToExcel);
-      codeListSmall.addEventListener('change', handleSmallFileImport);
+      // Dodajemy event listenery dla linków
+      importLink.addEventListener('click', handleImportClick);
+      exportLink.addEventListener('click', exportToExcel);
+      resetIcon.addEventListener('click', resetAll);
+      codeListSmall.addEventListener('change', handleFileImport);
       
       document.querySelector('.btn-ok')?.addEventListener('click', function() {
         selectStatus('OK');
