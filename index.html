@@ -26,6 +26,17 @@
       font-size: 14px;
     }
 
+    /* Animacje logowania */
+    @keyframes fadeInScale {
+      0% { opacity: 0; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes slideIn {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
     .logo-container {
       display: flex;
       justify-content: space-between;
@@ -51,7 +62,7 @@
     }
 
     .action-link {
-      color: #6c757d;  /* szary */
+      color: #6c757d;
       cursor: pointer;
       text-decoration: none;
       padding: 4px 6px;
@@ -63,10 +74,14 @@
       background-color: #e9ecef;
     }
 
-    .logo-area {
+    /* Wyśrodkowane logo z przyciskiem reset */
+    .center-logo {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .logo {
@@ -104,23 +119,24 @@
       justify-content: center;
     }
 
-    .reset-icon {
+    /* Pomniejszony przycisk reset */
+    .reset-icon-small {
       background: #dc3545;
       color: white;
-      width: 28px;
-      height: 28px;
+      width: 22px;
+      height: 22px;
       border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: bold;
       cursor: pointer;
       border: none;
       transition: background-color 0.2s;
     }
 
-    .reset-icon:hover {
+    .reset-icon-small:hover {
       background: #c82333;
     }
 
@@ -142,6 +158,7 @@
       cursor: pointer;
     }
 
+    /* Ekran logowania z animacją */
     .login-screen {
       position: fixed;
       top: 0;
@@ -164,6 +181,7 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+      animation: fadeInScale 0.3s ease-out;
     }
 
     .login-logo {
@@ -220,11 +238,13 @@
       border: 1px solid #ddd;
       border-radius: 6px;
       font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
     .login-input:focus {
       border-color: #007acc;
       outline: none;
+      box-shadow: 0 0 0 3px rgba(0,122,204,0.1);
     }
 
     .login-btn {
@@ -238,6 +258,15 @@
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .login-btn:hover {
+      background: #0056b3;
+    }
+
+    .login-btn:active {
+      transform: scale(0.98);
     }
 
     .login-error {
@@ -411,12 +440,12 @@
       border: 2px solid #e0a800;
     }
 
-    /* Duże komunikaty OK/NG z animacją */
+    /* Popup OK/NG - przesunięty wyżej (nad statystyki) */
     .status-popup {
       position: fixed;
-      top: 50%;
+      top: 120px;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0);
+      transform: translateX(-50%) scale(0);
       background: rgba(0,0,0,0.8);
       color: white;
       font-size: 48px;
@@ -440,7 +469,7 @@
     }
 
     .status-popup.show {
-      transform: translate(-50%, -50%) scale(1);
+      transform: translateX(-50%) scale(1);
       opacity: 1;
     }
 
@@ -534,6 +563,7 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
+    /* Wyśrodkowane statystyki */
     #stats-container {
       background: #f8f9fa;
       padding: 6px;
@@ -547,7 +577,7 @@
       gap: 10px;
       align-items: center;
       font-size: 10px;
-      justify-content: flex-start;
+      justify-content: center; /* Wyśrodkowanie */
     }
 
     .stats-row:first-child {
@@ -577,7 +607,7 @@
       margin-top: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      max-height: 520px;  /* ok. 20 wierszy (26px na wiersz) */
+      max-height: 520px;
       min-height: 260px;
     }
 
@@ -673,6 +703,7 @@
       .logo { font-size: 18px; }
       .logo-r, .logo-s { padding: 3px 5px; min-width: 28px; height: 28px; }
       .action-links { font-size: 10px; gap: 4px; }
+      .reset-icon-small { width: 20px; height: 20px; font-size: 12px; }
       main { padding: 6px; }
       .mode-selector { height: 32px; }
       .mode-btn { padding: 5px 2px; font-size: 11px; }
@@ -695,7 +726,7 @@
       th:nth-child(5), td:nth-child(5) { max-width: 50px; width: 50px; }
       th:nth-child(6), td:nth-child(6) { max-width: 70px; width: 70px; }
 
-      .status-popup { font-size: 36px; padding: 15px 30px; }
+      .status-popup { font-size: 36px; padding: 15px 30px; top: 100px; }
     }
 
     @media (max-width: 360px) {
@@ -776,31 +807,32 @@
   <div id="appContent" style="display: none;">
     <div class="logo-container">
       <div class="logo-left">
-        <!-- Linki IMPORT / EXPORT jako tekst z lewej strony (szare, skrócone) -->
+        <!-- Linki IMPORT / EXPORT jako tekst z lewej strony -->
         <div class="action-links">
           <span class="action-link" id="importLink" style="display: none;">IMP</span>
           <span class="action-link" id="exportLink" style="display: none;">EXP</span>
         </div>
-        <!-- Logo RS -->
-        <div class="logo-area">
-          <div class="logo">
-            <div class="logo-r">R</div>
-            <div class="logo-s">S</div>
-          </div>
-          <!-- Przycisk RESET po prawej stronie logo -->
-          <div class="reset-icon" id="resetIcon" onclick="resetAll()" title="Resetuj wszystkie dane" style="display: none;">↻</div>
-        </div>
-        <!-- Ukryty input do importu -->
-        <input type="file" id="code-list-small" accept=".xlsx,.csv" style="display: none;" />
       </div>
-      <!-- Usunięty napis Rework Scan -->
+      
+      <!-- Wyśrodkowane logo z pomniejszonym przyciskiem reset -->
+      <div class="center-logo">
+        <div class="logo">
+          <div class="logo-r">R</div>
+          <div class="logo-s">S</div>
+        </div>
+        <div class="reset-icon-small" id="resetIcon" onclick="resetAll()" title="Resetuj wszystkie dane" style="display: none;">↻</div>
+      </div>
+
+      <!-- Ukryty input do importu -->
+      <input type="file" id="code-list-small" accept=".xlsx,.csv" style="display: none;" />
+      
       <div class="user-info">
         <span id="currentUser"></span>
         <button class="logout-btn" onclick="logout()">Wyloguj</button>
       </div>
     </div>
 
-    <!-- Duży popup OK/NG z animacją -->
+    <!-- Duży popup OK/NG z animacją - przesunięty wyżej -->
     <div class="status-popup" id="statusPopup"></div>
 
     <!-- Nowy, ładny confirmation dialog -->
@@ -856,7 +888,7 @@
         <div style="background: #e8f5e9; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
           <div style="display: flex; justify-content: space-between; font-size: 11px;">
             <div><strong>Rework:</strong> <span id="currentReworkName">-</span></div>
-            <div><strong>Inspektor:</strong> <span id="currentInspectorName">-</span></div>
+            <div><strong>Inspektorzy:</strong> <span id="currentInspectorNames">-</span></div>
           </div>
         </div>
       </div>
@@ -985,7 +1017,7 @@
   const inspectorControls = document.getElementById("inspectorControls");
   const statusInfo = document.getElementById("statusInfo");
   const currentReworkName = document.getElementById("currentReworkName");
-  const currentInspectorName = document.getElementById("currentInspectorName");
+  const currentInspectorNames = document.getElementById("currentInspectorNames");
   const inspectorHeader = document.getElementById("inspectorHeader");
   const dateHeader = document.getElementById("dateHeader");
   const statusHeader = document.getElementById("statusHeader");
@@ -1029,6 +1061,33 @@
     setTimeout(() => {
       statusPopup.classList.remove('show');
     }, 1500);
+  }
+
+  // Funkcja do pobierania listy wszystkich inspektorów (dla trybu STATUS)
+  function getAllInspectors() {
+    const inspectors = new Set();
+    
+    // Zbierz inspektorów z reworkData
+    reworkData.forEach(item => {
+      if (item.inspector && item.inspector.trim() !== '') {
+        inspectors.add(item.inspector.trim());
+      }
+    });
+    
+    // Zbierz inspektorów z scanData
+    scanData.forEach(item => {
+      if (item.inspector && item.inspector.trim() !== '') {
+        inspectors.add(item.inspector.trim());
+      }
+    });
+    
+    // Dodaj aktualnego inspektora z localStorage jeśli istnieje
+    const localInspector = localStorage.getItem('inspector');
+    if (localInspector && localInspector.trim() !== '') {
+      inspectors.add(localInspector.trim());
+    }
+    
+    return Array.from(inspectors).sort().join(', ') || '-';
   }
 
   // Funkcje logowania z Firebase Auth
@@ -1125,51 +1184,51 @@
       }
     }
   }
-
-  async function logout() {
-    showCustomConfirm(
-      "Potwierdź wylogowanie",
-      "Czy na pewno chcesz się wylogować?",
-      async () => {
-        try {
-          await auth.signOut();
-          
-          if (firebaseListenerActive) {
-            database.ref(getReworkDataPath()).off();
-            database.ref(getScanDataPath()).off();
-            database.ref(getMetadataPath()).off();
-            firebaseListenerActive = false;
-          }
-          
-          if (statusRefreshInterval) {
-            clearInterval(statusRefreshInterval);
-            statusRefreshInterval = null;
-          }
-          
-          if (saveTimeout) {
-            clearTimeout(saveTimeout);
-            saveTimeout = null;
-          }
-          
-          currentUser = null;
-          userRole = null;
-          appContent.style.display = 'none';
-          loginScreen.style.display = 'flex';
-          
-          document.getElementById('loginPassword').value = '';
-          loginError.textContent = '';
-          debugBtn.style.display = 'none';
-          
-          sessionStorage.removeItem('loggedIn');
-          sessionStorage.removeItem('user');
-          sessionStorage.removeItem('userRole');
-          
-        } catch (error) {
-          console.error('Błąd wylogowania:', error);
+async function logout() {
+  showCustomConfirm(
+    "Potwierdź wylogowanie",
+    "Czy na pewno chcesz się wylogować?",
+    async () => {
+      try {
+        await auth.signOut();
+        
+        if (firebaseListenerActive) {
+          database.ref(getReworkDataPath()).off();
+          database.ref(getScanDataPath()).off();
+          database.ref(getMetadataPath()).off();
+          firebaseListenerActive = false;
         }
+        
+        if (statusRefreshInterval) {
+          clearInterval(statusRefreshInterval);
+          statusRefreshInterval = null;
+        }
+        
+        if (saveTimeout) {
+          clearTimeout(saveTimeout);
+          saveTimeout = null;
+        }
+        
+        currentUser = null;
+        userRole = null;
+        appContent.style.display = 'none';
+        loginScreen.style.display = 'flex';
+        
+        document.getElementById('loginPassword').value = '';
+        loginError.textContent = '';
+        debugBtn.style.display = 'none';
+        
+        sessionStorage.removeItem('loggedIn');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('userRole');
+        
+      } catch (error) {
+        console.error('Błąd wylogowania:', error);
       }
-    );
-  }
+    }
+  );
+}
+
 auth.onAuthStateChanged(async (user) => {
   if (user) {
     if (user.email === USER_EMAILS.inspektor) {
@@ -1338,7 +1397,12 @@ async function loadDataFromFirebase() {
       if (metadata) {
         reworkNameInput.value = metadata.reworkName || '';
         currentReworkName.textContent = metadata.reworkName || '-';
-        currentInspectorName.textContent = localStorage.getItem('inspector') || '-';
+        // W trybie STATUS pokazujemy wszystkich inspektorów
+        if (userRole === 'status') {
+          currentInspectorNames.textContent = getAllInspectors();
+        } else {
+          currentInspectorNames.textContent = localStorage.getItem('inspector') || '-';
+        }
       }
     }
     
@@ -1373,6 +1437,10 @@ function setupRealtimeListeners() {
       reworkData = [];
     }
     if (currentMode === 'rework') { renderTable(); updateStats(); }
+    // Aktualizuj listę inspektorów dla trybu STATUS
+    if (userRole === 'status') {
+      currentInspectorNames.textContent = getAllInspectors();
+    }
   });
   database.ref(getMetadataPath()).on('value', (snapshot) => {
     if (snapshot.exists()) {
@@ -1392,6 +1460,9 @@ function setupStatusRefresh() {
     await loadDataFromFirebase();
     renderTable();
     updateStats();
+    if (userRole === 'status') {
+      currentInspectorNames.textContent = getAllInspectors();
+    }
   }, 30000);
 }
 
@@ -1418,7 +1489,7 @@ function setupPermissions() {
 
 function showStatusInfo() {
   currentReworkName.textContent = localStorage.getItem('reworkName') || '-';
-  currentInspectorName.textContent = localStorage.getItem('inspector') || '-';
+  currentInspectorNames.textContent = getAllInspectors();
 }
 
 // Funkcja do ładnego confirm dialog
@@ -1640,6 +1711,11 @@ async function processImportedData(rawData) {
   renderTable();
   updateStats();
   codeListSmall.value = '';
+  
+  // Aktualizuj listę inspektorów dla trybu STATUS
+  if (userRole === 'status') {
+    currentInspectorNames.textContent = getAllInspectors();
+  }
 }
 
 // Główna funkcja skanowania
@@ -1785,100 +1861,105 @@ function selectStatus(status) {
     saveEntry(status, "");
   }
 }
+// Zapis statusu - z popupem
+    async function saveEntry(status, note) {
+      if (!tempCode) {
+        showMessage("Brak kodu do zapisania", "error", 3000);
+        return;
+      }
 
-// Zapis statusu - DODANO WYWOŁANIE showStatusPopup
-async function saveEntry(status, note) {
-  if (!tempCode) {
-    showMessage("Brak kodu do zapisania", "error", 3000);
-    return;
-  }
+      let codeIndex = -1;
+      if (currentMode === 'rework') {
+        const tempCodePrefix = tempCode.substring(0, 14);
+        codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === tempCodePrefix);
+      } else {
+        codeIndex = scanData.findIndex(item => item.code === tempCode);
+      }
+      
+      const existingEntry = codeIndex !== -1 ? (currentMode === 'rework' ? reworkData[codeIndex] : scanData[codeIndex]) : null;
+      
+      const updateData = {
+        inspector: inspectorInput.value.trim(),
+        timestamp: Date.now(),
+        isNew: true
+      };
+      
+      if (currentStatusField === 'status') {
+        if (status === "OK") {
+          updateData.status = "OK";
+          updateData.statusAfterRework = "OK";
+        } else if (status === "NG") {
+          updateData.status = "NG";
+          updateData.note = note;
+        } else if (status === "OK/NG") {
+          updateData.status = "NG";
+          updateData.statusAfterRework = "OK";
+        }
+        
+        if (existingEntry && existingEntry.note && status !== "NG") {
+          updateData.note = existingEntry.note;
+        }
+      } else {
+        updateData.statusAfterRework = status;
+        if (status === "NG") {
+          updateData.note = note;
+        } else if (existingEntry && existingEntry.note) {
+          updateData.note = existingEntry.note;
+        }
+      }
+      
+      if (codeIndex !== -1) {
+        if (currentMode === 'rework') {
+          reworkData[codeIndex] = {
+            ...reworkData[codeIndex],
+            ...updateData
+          };
+        } else {
+          scanData[codeIndex] = {
+            ...scanData[codeIndex],
+            ...updateData
+          };
+        }
+      } else if (currentMode === 'scan') {
+        const newEntry = {
+          code: tempCode,
+          ...updateData
+        };
+        scanData.push(newEntry);
+      }
+      
+      await debouncedSave();
+      
+      noteInput.value = "";
+      noteInput.style.display = "none";
+      noteInput.disabled = true;
+      
+      tempCode = '';
+      
+      // Wyświetl duży popup z wybranym statusem
+      const displayStatus = (status === "OK/NG") ? "OK/NG" : status;
+      showStatusPopup(displayStatus);
+      
+      showMessage(`✓ Kod oznaczony jako ${status}`, "success", 2000);
+      renderTable();
+      updateStats();
+      
+      // Aktualizuj listę inspektorów dla trybu STATUS
+      if (userRole === 'status') {
+        currentInspectorNames.textContent = getAllInspectors();
+      }
+      
+      barcodeInput.value = "";
+      isProcessing = false;
+      
+      setTimeout(() => {
+        if (validateForm()) {
+          barcodeInput.focus();
+        }
+      }, 100);
+    }
 
-  let codeIndex = -1;
-  if (currentMode === 'rework') {
-    const tempCodePrefix = tempCode.substring(0, 14);
-    codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === tempCodePrefix);
-  } else {
-    codeIndex = scanData.findIndex(item => item.code === tempCode);
-  }
-  
-  const existingEntry = codeIndex !== -1 ? (currentMode === 'rework' ? reworkData[codeIndex] : scanData[codeIndex]) : null;
-  
-  const updateData = {
-    inspector: inspectorInput.value.trim(),
-    timestamp: Date.now(),
-    isNew: true
-  };
-  
-  if (currentStatusField === 'status') {
-    if (status === "OK") {
-      updateData.status = "OK";
-      updateData.statusAfterRework = "OK";
-    } else if (status === "NG") {
-      updateData.status = "NG";
-      updateData.note = note;
-    } else if (status === "OK/NG") {
-      updateData.status = "NG";
-      updateData.statusAfterRework = "OK";
-    }
-    
-    if (existingEntry && existingEntry.note && status !== "NG") {
-      updateData.note = existingEntry.note;
-    }
-  } else {
-    updateData.statusAfterRework = status;
-    if (status === "NG") {
-      updateData.note = note;
-    } else if (existingEntry && existingEntry.note) {
-      updateData.note = existingEntry.note;
-    }
-  }
-  
-  if (codeIndex !== -1) {
-    if (currentMode === 'rework') {
-      reworkData[codeIndex] = {
-        ...reworkData[codeIndex],
-        ...updateData
-      };
-    } else {
-      scanData[codeIndex] = {
-        ...scanData[codeIndex],
-        ...updateData
-      };
-    }
-  } else if (currentMode === 'scan') {
-    const newEntry = {
-      code: tempCode,
-      ...updateData
-    };
-    scanData.push(newEntry);
-  }
-  
-  await debouncedSave();
-  
-  noteInput.value = "";
-  noteInput.style.display = "none";
-  noteInput.disabled = true;
-  
-  tempCode = '';
-  
-  // Wyświetl duży popup z wybranym statusem
-  const displayStatus = (status === "OK/NG") ? "OK/NG" : status;
-  showStatusPopup(displayStatus);
-  
-  showMessage(`✓ Kod oznaczony jako ${status}`, "success", 2000);
-  renderTable();
-  updateStats();
-  
-  barcodeInput.value = "";
-  isProcessing = false;
-  
-  setTimeout(() => {
-    if (validateForm()) {
-      barcodeInput.focus();
-    }
-  }, 100);
-}
- // Funkcja dla trybu SCAN
+    // Funkcja dla trybu SCAN
     async function saveEntryScanMode(code) {
       const newEntry = {
         code: code,
@@ -1897,6 +1978,11 @@ async function saveEntry(status, note) {
       showMessage("✓ Kod zeskanowany!", "success", 2000);
       renderTable();
       updateStats();
+      
+      // Aktualizuj listę inspektorów dla trybu STATUS
+      if (userRole === 'status') {
+        currentInspectorNames.textContent = getAllInspectors();
+      }
       
       barcodeInput.value = "";
       isProcessing = false;
@@ -2068,7 +2154,7 @@ async function saveEntry(status, note) {
       }
     }
 
-    // Usuwanie/reset - używamy nowego ładnego confirm dialog
+    // Usuwanie/reset - używamy ładnego confirm dialog
     function showRemoveConfirmation(code) {
       if (userRole === 'status') {
         showMessage("Tryb podglądu - edycja zablokowana", "error", 3000);
@@ -2122,6 +2208,12 @@ async function saveEntry(status, note) {
         renderTable();
         updateStats();
         codeToRemove = null;
+        
+        // Aktualizuj listę inspektorów dla trybu STATUS
+        if (userRole === 'status') {
+          currentInspectorNames.textContent = getAllInspectors();
+        }
+        
         setTimeout(() => barcodeInput.focus(), 100);
       }
     }
@@ -2214,6 +2306,12 @@ async function saveEntry(status, note) {
           renderTable();
           updateStats();
           showMessage("Wyczyszczono wszystkie dane", "success", 3000);
+          
+          // Aktualizuj listę inspektorów dla trybu STATUS
+          if (userRole === 'status') {
+            currentInspectorNames.textContent = getAllInspectors();
+          }
+          
           setTimeout(() => barcodeInput.focus(), 300);
         }
       );
@@ -2245,6 +2343,7 @@ async function saveEntry(status, note) {
       console.log("Current status field:", currentStatusField);
       console.log("Form valid:", validateForm());
       console.log("Inspector z localStorage:", localStorage.getItem('inspector'));
+      console.log("Wszyscy inspektorzy:", getAllInspectors());
       console.log("Sortowanie:", currentSort);
       console.log("==================");
     }
