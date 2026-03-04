@@ -32,11 +32,6 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
-    @keyframes slideIn {
-      0% { opacity: 0; transform: translateY(-20px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
     .logo-container {
       display: flex;
       justify-content: space-between;
@@ -367,37 +362,69 @@
       cursor: not-allowed !important;
     }
 
+    /* NOWE, ULEPSZONE PRZYCISKI STATUSU */
     #buttons {
       display: none;
       flex-direction: row;
-      gap: 6px;
-      margin: 8px 0;
+      gap: 8px;
+      margin: 12px 0;
     }
 
     .btn-small {
       flex: 1;
-      padding: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      border-radius: 6px;
+      padding: 10px 8px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
       border: none;
       cursor: pointer;
-      height: 36px;
+      height: 42px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-small::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+
+    .btn-small:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 10px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-small:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .btn-ok {
-      background-color: #28a745;
+      background: linear-gradient(145deg, #28a745, #1e7e34);
       color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
 
     .btn-ng {
-      background-color: #dc3545;
+      background: linear-gradient(145deg, #dc3545, #b02a37);
       color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
 
     .btn-ok-ng {
-      background-color: #ffc107;
+      background: linear-gradient(145deg, #ffc107, #e0a800);
       color: #212529;
+      text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+      border: 1px solid rgba(0,0,0,0.1);
     }
 
     .message {
@@ -577,7 +604,7 @@
       gap: 10px;
       align-items: center;
       font-size: 10px;
-      justify-content: center; /* Wyśrodkowanie */
+      justify-content: center;
     }
 
     .stats-row:first-child {
@@ -602,13 +629,13 @@
     .stat-total { color: #007acc; }
     .stat-pending { color: #ffc107; }
 
-    /* Zwiększona wysokość tabeli - ok. 20 wierszy */
+    /* Zwiększona wysokość tabeli - ok. 25 wierszy */
     #codes-table {
       margin-top: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      max-height: 520px;
-      min-height: 260px;
+      max-height: 650px;  /* zwiększone o 5 wierszy */
+      min-height: 300px;
     }
 
     table {
@@ -709,8 +736,8 @@
       .mode-btn { padding: 5px 2px; font-size: 11px; }
       .input-row-compact input { height: 32px; padding: 5px 6px; font-size: 11px; }
       input { height: 32px; padding: 5px 6px; font-size: 11px; }
-      .btn-small, .action-btn { height: 32px; padding: 6px; font-size: 11px; }
-      #codes-table { max-height: 400px; }
+      .btn-small { height: 38px; padding: 8px; font-size: 12px; }
+      #codes-table { max-height: 500px; }
       table { font-size: 9px; min-width: 550px; }
       th, td { padding: 3px 1px; }
       th { font-size: 9px; padding: 4px 1px; }
@@ -1063,19 +1090,12 @@
     }, 1500);
   }
 
-  // Funkcja do pobierania listy wszystkich inspektorów (dla trybu STATUS)
-  function getAllInspectors() {
+  // Funkcja do pobierania listy wszystkich inspektorów TYLKO Z TRYBU REWORK (pierwsze skanowanie)
+  function getAllInspectorsFromRework() {
     const inspectors = new Set();
     
-    // Zbierz inspektorów z reworkData
+    // Zbierz inspektorów tylko z reworkData (pierwsze skanowanie)
     reworkData.forEach(item => {
-      if (item.inspector && item.inspector.trim() !== '') {
-        inspectors.add(item.inspector.trim());
-      }
-    });
-    
-    // Zbierz inspektorów z scanData
-    scanData.forEach(item => {
       if (item.inspector && item.inspector.trim() !== '') {
         inspectors.add(item.inspector.trim());
       }
@@ -1397,9 +1417,9 @@ async function loadDataFromFirebase() {
       if (metadata) {
         reworkNameInput.value = metadata.reworkName || '';
         currentReworkName.textContent = metadata.reworkName || '-';
-        // W trybie STATUS pokazujemy wszystkich inspektorów
+        // W trybie STATUS pokazujemy wszystkich inspektorów TYLKO Z REWORK
         if (userRole === 'status') {
-          currentInspectorNames.textContent = getAllInspectors();
+          currentInspectorNames.textContent = getAllInspectorsFromRework();
         } else {
           currentInspectorNames.textContent = localStorage.getItem('inspector') || '-';
         }
@@ -1437,9 +1457,9 @@ function setupRealtimeListeners() {
       reworkData = [];
     }
     if (currentMode === 'rework') { renderTable(); updateStats(); }
-    // Aktualizuj listę inspektorów dla trybu STATUS
+    // Aktualizuj listę inspektorów dla trybu STATUS (tylko z rework)
     if (userRole === 'status') {
-      currentInspectorNames.textContent = getAllInspectors();
+      currentInspectorNames.textContent = getAllInspectorsFromRework();
     }
   });
   database.ref(getMetadataPath()).on('value', (snapshot) => {
@@ -1461,7 +1481,7 @@ function setupStatusRefresh() {
     renderTable();
     updateStats();
     if (userRole === 'status') {
-      currentInspectorNames.textContent = getAllInspectors();
+      currentInspectorNames.textContent = getAllInspectorsFromRework();
     }
   }, 30000);
 }
@@ -1489,7 +1509,7 @@ function setupPermissions() {
 
 function showStatusInfo() {
   currentReworkName.textContent = localStorage.getItem('reworkName') || '-';
-  currentInspectorNames.textContent = getAllInspectors();
+  currentInspectorNames.textContent = getAllInspectorsFromRework();
 }
 
 // Funkcja do ładnego confirm dialog
@@ -1714,7 +1734,7 @@ async function processImportedData(rawData) {
   
   // Aktualizuj listę inspektorów dla trybu STATUS
   if (userRole === 'status') {
-    currentInspectorNames.textContent = getAllInspectors();
+    currentInspectorNames.textContent = getAllInspectorsFromRework();
   }
 }
 
@@ -1861,7 +1881,7 @@ function selectStatus(status) {
     saveEntry(status, "");
   }
 }
-// Zapis statusu - z popupem
+ // Zapis statusu - z popupem
     async function saveEntry(status, note) {
       if (!tempCode) {
         showMessage("Brak kodu do zapisania", "error", 3000);
@@ -1946,7 +1966,7 @@ function selectStatus(status) {
       
       // Aktualizuj listę inspektorów dla trybu STATUS
       if (userRole === 'status') {
-        currentInspectorNames.textContent = getAllInspectors();
+        currentInspectorNames.textContent = getAllInspectorsFromRework();
       }
       
       barcodeInput.value = "";
@@ -1981,7 +2001,7 @@ function selectStatus(status) {
       
       // Aktualizuj listę inspektorów dla trybu STATUS
       if (userRole === 'status') {
-        currentInspectorNames.textContent = getAllInspectors();
+        currentInspectorNames.textContent = getAllInspectorsFromRework();
       }
       
       barcodeInput.value = "";
@@ -2211,7 +2231,7 @@ function selectStatus(status) {
         
         // Aktualizuj listę inspektorów dla trybu STATUS
         if (userRole === 'status') {
-          currentInspectorNames.textContent = getAllInspectors();
+          currentInspectorNames.textContent = getAllInspectorsFromRework();
         }
         
         setTimeout(() => barcodeInput.focus(), 100);
@@ -2309,7 +2329,7 @@ function selectStatus(status) {
           
           // Aktualizuj listę inspektorów dla trybu STATUS
           if (userRole === 'status') {
-            currentInspectorNames.textContent = getAllInspectors();
+            currentInspectorNames.textContent = getAllInspectorsFromRework();
           }
           
           setTimeout(() => barcodeInput.focus(), 300);
@@ -2343,7 +2363,7 @@ function selectStatus(status) {
       console.log("Current status field:", currentStatusField);
       console.log("Form valid:", validateForm());
       console.log("Inspector z localStorage:", localStorage.getItem('inspector'));
-      console.log("Wszyscy inspektorzy:", getAllInspectors());
+      console.log("Wszyscy inspektorzy (tylko rework):", getAllInspectorsFromRework());
       console.log("Sortowanie:", currentSort);
       console.log("==================");
     }
@@ -2423,4 +2443,3 @@ function selectStatus(status) {
   </script>
 </body>
 </html>
-
