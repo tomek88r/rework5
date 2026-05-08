@@ -58,8 +58,15 @@
     .mode-btn.active.rework { background-color: #007acc; color: white; }
     .mode-btn.active.scan { background-color: #28a745; color: white; }
     main { margin: 0 6px 8px; background: white; padding: 8px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-    .input-row-compact { display: flex; gap: 6px; margin-bottom: 8px; }
+    .input-row-compact { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
     .input-row-compact input { flex: 1; padding: 6px 8px; font-size: 12px; border: 1px solid #ddd; border-radius: 6px; background: white; height: 34px; min-width: 0; }
+    .camera-btn { width: 34px; height: 34px; min-width: 34px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+    .camera-btn.active { background: #28a745; }
+    .camera-btn:hover { background: #5a6268; }
+    .camera-btn.active:hover { background: #218838; }
+    .photo-preview-container { margin-bottom: 8px; text-align: center; }
+    .photo-preview { max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #ddd; cursor: pointer; display: none; }
+    .photo-preview.visible { display: inline-block; }
     input { width: 100%; padding: 6px 8px; margin: 4px 0; font-size: 12px; border: 1px solid #ddd; border-radius: 6px; background: white; -webkit-appearance: none; height: 34px; }
     input:focus { border-color: #007acc; outline: none; }
     .required-field { border-color: #dc3545 !important; }
@@ -130,6 +137,7 @@
     #fileInputContainer { display: none !important; }
     #file-name { display: none; }
     #code-list-small { display: none; }
+    #cameraInput { display: none; }
     @media (max-width: 480px) {
       body { font-size: 12px; }
       .logo { font-size: 18px; }
@@ -140,6 +148,7 @@
       .mode-selector { height: 32px; }
       .mode-btn { padding: 5px 2px; font-size: 11px; }
       .input-row-compact input { height: 32px; padding: 5px 6px; font-size: 11px; }
+      .camera-btn { width: 32px; height: 32px; min-width: 32px; }
       .btn-small { height: 38px; padding: 8px; font-size: 12px; }
       #codes-table { max-height: 500px; }
       table { font-size: 9px; min-width: 550px; }
@@ -158,9 +167,11 @@
       .status-popup { font-size: 36px; padding: 15px 30px; top: 100px; }
       .scan-input-wrapper { padding: 8px 10px; min-height: 44px; }
       .scan-display { font-size: 12px; }
+      .photo-preview { max-height: 150px; }
     }
     @media (max-width: 360px) {
       .input-row-compact { flex-direction: column; gap: 4px; }
+      .camera-btn { width: 30px; height: 30px; min-width: 30px; align-self: flex-end; }
       table { min-width: 500px; }
       .stats-row { gap: 6px; }
       .action-links { flex-direction: column; gap: 2px; }
@@ -226,6 +237,11 @@
         <div class="input-row-compact">
           <input id="rework-name" placeholder="Nazwa reworku*" onkeydown="handleReworkNameKeyDown(event)" oninput="validateForm()" />
           <input id="inspector" placeholder="Inspektor*" onkeydown="handleInspectorKeyDown(event)" oninput="validateForm()" />
+          <button class="camera-btn" id="cameraButton" onclick="openCamera()" title="Dodaj zdjęcie">📷</button>
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleCameraCapture(event)" />
+        </div>
+        <div class="photo-preview-container" id="photoPreviewContainer">
+          <img id="photoPreview" class="photo-preview" onclick="openCamera()" alt="Podgląd zdjęcia" title="Kliknij, aby zmienić zdjęcie" />
         </div>
         <div class="scan-input-wrapper" id="scanInputWrapper">
           <div class="scan-display">
@@ -345,6 +361,9 @@
     const customConfirmMessage = document.getElementById("customConfirmMessage");
     const customConfirmCancel = document.getElementById("customConfirmCancel");
     const customConfirmOk = document.getElementById("customConfirmOk");
+    const cameraButton = document.getElementById("cameraButton");
+    const cameraInput = document.getElementById("cameraInput");
+    const photoPreview = document.getElementById("photoPreview");
     let reworkData = [];
     let scanData = [];
     let currentSort = { field: 'date', direction: 'desc' };
@@ -363,6 +382,7 @@
     let saveTimeout = null;
     let reworkModeName = '';
     let scanModeName = '';
+    let currentPhotoDataUrl = null;
     function showStatusPopup(status) {
       statusPopup.textContent = status;
       statusPopup.className = 'status-popup ' + (status === 'OK' ? 'ok' : 'ng') + ' show';
@@ -379,8 +399,7 @@
       document.querySelectorAll('.user-type-btn').forEach(btn => { btn.classList.remove('active'); if (btn.dataset.type === type) btn.classList.add('active'); });
       const passwordField = document.getElementById('loginPassword');
       passwordField.placeholder = `Hasło dla ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-      passwordField.value = '';
-      loginError.textContent = '';
+      passwordField.value = ''; loginError.textContent = '';
     }
     function initNoKeyboardScanning() {
       hiddenScanBuffer.setAttribute('inputmode', 'none');
@@ -392,8 +411,66 @@
       hiddenScanBuffer.addEventListener('keydown', handleScanKeyDown);
       hiddenScanBuffer.addEventListener('focus', (e) => {});
     }
+    function openCamera() {
+      if (userRole !== 'inspector') return;
+      cameraInput.click();
+    }
+    function handleCameraCapture(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showMessage("Wybierz plik obrazu", "error", 4000);
+        playFeedback('error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentPhotoDataUrl = e.target.result;
+        photoPreview.src = currentPhotoDataUrl;
+        photoPreview.classList.add('visible');
+        cameraButton.classList.add('active');
+        cameraButton.textContent = '📸';
+        try { localStorage.setItem('currentPhoto', currentPhotoDataUrl); } catch (e) {}
+        validateForm();
+        showMessage("Zdjęcie dodane", "success", 4000);
+        playFeedback('success');
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+    function clearPhoto() {
+      currentPhotoDataUrl = null;
+      photoPreview.src = '';
+      photoPreview.classList.remove('visible');
+      cameraButton.classList.remove('active');
+      cameraButton.textContent = '📷';
+      try { localStorage.removeItem('currentPhoto'); } catch (e) {}
+    }
+    function validateForm() {
+      if (userRole === 'status') return false;
+      const isNameValid = reworkNameInput.value.trim().length > 0;
+      const isInspectorValid = inspectorInput.value.trim().length >= 3;
+      const isPhotoValid = currentPhotoDataUrl !== null;
+      reworkNameInput.classList.toggle('required-field', !isNameValid);
+      inspectorInput.classList.toggle('required-field', !isInspectorValid);
+      cameraButton.classList.toggle('required-field', !isPhotoValid);
+      if (!isPhotoValid) {
+        cameraButton.style.border = '2px solid #dc3545';
+      } else {
+        cameraButton.style.border = 'none';
+      }
+      return isNameValid && isInspectorValid && isPhotoValid;
+    }
     function activateScanning() {
-      if (!validateForm()) { showMessage("Wprowadź nazwę i inspektora przed skanowaniem", "error", 3000); return; }
+      if (!validateForm()) {
+        let msg = "Wprowadź nazwę, inspektora i dodaj zdjęcie przed skanowaniem";
+        if (reworkNameInput.value.trim().length === 0) msg = "Wprowadź nazwę reworku";
+        else if (inspectorInput.value.trim().length < 3) msg = "Wprowadź nazwisko inspektora (min. 3 znaki)";
+        else if (!currentPhotoDataUrl) msg = "Dodaj zdjęcie przed skanowaniem";
+        showMessage(msg, "error", 4000);
+        playFeedback('error');
+        return;
+      }
       if (userRole !== 'inspector') return;
       isScanActive = true;
       scanInputWrapper.classList.add('active');
@@ -401,7 +478,7 @@
       barcodeBuffer = '';
       scanValue.textContent = '';
       hiddenScanBuffer.focus();
-      showMessage("Aktywne skanowanie - skanuj kody", "info", 2000);
+      showMessage("Aktywne skanowanie - skanuj kody", "info", 4000);
     }
     function deactivateScanning() {
       isScanActive = false;
@@ -417,9 +494,9 @@
       if (e.key === 'Enter') {
         const code = barcodeBuffer.trim();
         if (code.length >= 14) { await processScannedCodeHID(code); }
-        else if (code.length > 0) { showMessage("Kod musi mieć co najmniej 14 znaków", "error", 3000); }
+        else if (code.length > 0) { showMessage("Kod musi mieć co najmniej 14 znaków", "error", 4000); playFeedback('error'); }
         barcodeBuffer = ''; scanValue.textContent = ''; scanPlaceholder.textContent = '✏️ Skanuj kod...';
-      } else if (e.key === 'Escape') { deactivateScanning(); showMessage("Skanowanie anulowane", "info", 2000); }
+      } else if (e.key === 'Escape') { deactivateScanning(); showMessage("Skanowanie anulowane", "info", 4000); }
       else if (e.key === 'Tab') { return; }
       else if (e.key.length === 1) { barcodeBuffer += e.key; scanValue.textContent = barcodeBuffer; scanPlaceholder.textContent = ''; }
     }
@@ -429,25 +506,29 @@
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
-        let frequency = 800; let duration = 0.15;
-        if (type === 'success' || type === 'scan-success') { frequency = 880; gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15); }
-        else if (type === 'error') { frequency = 200; duration = 0.3; gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); }
-        else if (type === 'scan-error') { frequency = 250; duration = 0.3; gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); }
-        oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime); oscillator.start(); oscillator.stop(audioCtx.currentTime + duration);
-        if (window.navigator && window.navigator.vibrate) { const vibrationPattern = type === 'error' || type === 'scan-error' ? [100, 50, 100] : [100]; window.navigator.vibrate(vibrationPattern); }
+        let frequency = 800; let duration = 0.2; let volume = 0.3;
+        if (type === 'success' || type === 'scan-success') { frequency = 1000; duration = 0.25; volume = 0.4; gainNode.gain.setValueAtTime(volume, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration); }
+        else if (type === 'error' || type === 'scan-error') { frequency = 180; duration = 0.4; volume = 0.5; gainNode.gain.setValueAtTime(volume, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration); }
+        oscillator.type = type === 'error' || type === 'scan-error' ? 'square' : 'sine';
+        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+        oscillator.start(); oscillator.stop(audioCtx.currentTime + duration);
+        if (window.navigator && window.navigator.vibrate) {
+          const vibrationPattern = type === 'error' || type === 'scan-error' ? [200, 100, 200] : [150];
+          window.navigator.vibrate(vibrationPattern);
+        }
       } catch (e) { console.log("Audio/Vibration not supported", e); }
     }
     async function processScannedCodeHID(scannedCode) {
-      if (isProcessing) { showMessage("Przetwarzanie...", "info", 1000); return; }
-      if (!validateForm()) { showMessage("Wprowadź nazwę i inspektora przed skanowaniem", "error", 4000); deactivateScanning(); return; }
+      if (isProcessing) { showMessage("Przetwarzanie...", "info", 4000); return; }
+      if (!validateForm()) { showMessage("Wprowadź nazwę, inspektora i dodaj zdjęcie przed skanowaniem", "error", 4000); playFeedback('error'); deactivateScanning(); return; }
       const code = scannedCode.trim().toUpperCase();
-      if (code.length < 14) { showMessage("Kod musi mieć co najmniej 14 znaków", "error", 4000); playFeedback('scan-error'); return; }
+      if (code.length < 14) { showMessage("Kod musi mieć co najmniej 14 znaków", "error", 4000); playFeedback('error'); return; }
       isProcessing = true;
       try {
         if (currentMode === 'rework') {
           const scannedCodePrefix = code.substring(0, 14);
           const matchedItem = reworkData.find(item => { if (!item || !item.code) return false; return item.code.substring(0, 14) === scannedCodePrefix; });
-          if (!matchedItem) { showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 4000); playFeedback('scan-error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
+          if (!matchedItem) { showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 4000); playFeedback('error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
           const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block';
           if (matchedItem.status === "") {
             tempCode = matchedItem.code; currentStatusField = 'status'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible');
@@ -462,7 +543,7 @@
           }
         } else {
           const exists = scanData.some(item => item.code === code);
-          if (exists) { showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 4000); playFeedback('scan-error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
+          if (exists) { showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 4000); playFeedback('error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
           tempCode = code; await saveEntryScanModeHID(code);
         }
       } catch (error) { console.error("Błąd skanowania:", error); showMessage("Błąd przetwarzania kodu", "error", 4000); playFeedback('error'); isProcessing = false; }
@@ -485,13 +566,13 @@
         else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
         currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
         loginScreen.style.display = 'none'; appContent.style.display = 'block';
+        loadSavedPhoto();
         await loadDataFromFirebase(); setupPermissions();
         if (userRole === 'inspector') {
           validateForm(); switchMode('rework'); setupRealtimeListeners();
           importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex';
-          lastReworkName = reworkNameInput.value.trim();
           initNoKeyboardScanning();
-          setTimeout(() => { if (!reworkNameInput.value) { reworkNameInput.focus(); } else if (!inspectorInput.value) { inspectorInput.focus(); } else { activateScanning(); } }, 300);
+          setTimeout(() => { if (!reworkNameInput.value) { reworkNameInput.focus(); } else if (!inspectorInput.value) { inspectorInput.focus(); } else if (validateForm()) { activateScanning(); } }, 300);
         } else {
           showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh();
           importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none';
@@ -503,7 +584,20 @@
         if (error.code === 'auth/wrong-password') { loginError.textContent = 'Nieprawidłowe hasło'; }
         else if (error.code === 'auth/user-not-found') { loginError.textContent = 'Użytkownik nie istnieje'; }
         else { loginError.textContent = 'Błąd logowania. Spróbuj ponownie.'; }
+        playFeedback('error');
       }
+    }
+    function loadSavedPhoto() {
+      try {
+        const saved = localStorage.getItem('currentPhoto');
+        if (saved) {
+          currentPhotoDataUrl = saved;
+          photoPreview.src = currentPhotoDataUrl;
+          photoPreview.classList.add('visible');
+          cameraButton.classList.add('active');
+          cameraButton.textContent = '📸';
+        }
+      } catch (e) {}
     }
     async function logout() {
       showCustomConfirm("Potwierdź wylogowanie", "Czy na pewno chcesz się wylogować?", async () => {
@@ -524,11 +618,12 @@
         else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
         currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
         loginScreen.style.display = 'none'; appContent.style.display = 'block';
+        loadSavedPhoto();
         await loadDataFromFirebase(); setupPermissions();
         if (userRole === 'inspector') {
           validateForm(); switchMode('rework'); setupRealtimeListeners();
           importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex';
-          lastReworkName = reworkNameInput.value.trim(); initNoKeyboardScanning();
+          initNoKeyboardScanning();
         } else { showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh(); importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none'; }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
         sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('user', currentUser); sessionStorage.setItem('userRole', userRole);
@@ -541,11 +636,12 @@
         else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
         currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
         loginScreen.style.display = 'none'; appContent.style.display = 'block';
+        loadSavedPhoto();
         await loadDataFromFirebase(); setupPermissions();
         if (userRole === 'inspector') {
           validateForm(); switchMode('rework'); setupRealtimeListeners();
           importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex';
-          lastReworkName = reworkNameInput.value.trim(); initNoKeyboardScanning();
+          initNoKeyboardScanning();
         } else { showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh(); importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none'; }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
       }
@@ -562,11 +658,11 @@
     }
     async function saveReworkDataToFirebase() {
       try { await database.ref(getReworkDataPath()).set(reworkData); await saveMetadataToFirebase(); console.log('Dane rework zapisane do Firebase'); return true; }
-      catch (error) { console.error('Błąd zapisu danych rework:', error); showMessage('Błąd zapisu do bazy danych', 'error', 3000); return false; }
+      catch (error) { console.error('Błąd zapisu danych rework:', error); showMessage('Błąd zapisu do bazy danych', 'error', 4000); return false; }
     }
     async function saveScanDataToFirebase() {
       try { await database.ref(getScanDataPath()).set(scanData); await saveMetadataToFirebase(); console.log('Dane scan zapisane do Firebase'); return true; }
-      catch (error) { console.error('Błąd zapisu danych scan:', error); showMessage('Błąd zapisu do bazy danych', 'error', 3000); return false; }
+      catch (error) { console.error('Błąd zapisu danych scan:', error); showMessage('Błąd zapisu do bazy danych', 'error', 4000); return false; }
     }
     async function loadDataFromFirebase() {
       try {
@@ -620,6 +716,9 @@
       modeSelector.style.display = isInspector ? 'flex' : 'none';
       inspectorControls.style.display = isInspector ? 'block' : 'none';
       statusInfo.style.display = isStatus ? 'block' : 'none';
+      cameraButton.style.display = isInspector ? 'flex' : 'none';
+      const photoContainer = document.getElementById('photoPreviewContainer');
+      if (photoContainer) photoContainer.style.display = isInspector ? 'block' : 'none';
       if (isStatus) { actionHeader.style.display = 'none'; document.querySelector('table thead').classList.add('status-mode'); scanInputWrapper.style.display = 'none'; }
       else { actionHeader.style.display = ''; document.querySelector('table thead').classList.remove('status-mode'); validateForm(); scanInputWrapper.style.display = 'block'; }
     }
@@ -629,14 +728,6 @@
       const handleConfirm = () => { customConfirmOverlay.style.display = 'none'; customConfirmOk.removeEventListener('click', handleConfirm); customConfirmCancel.removeEventListener('click', handleCancel); onConfirm(); };
       const handleCancel = () => { customConfirmOverlay.style.display = 'none'; customConfirmOk.removeEventListener('click', handleConfirm); customConfirmCancel.removeEventListener('click', handleCancel); };
       customConfirmOk.addEventListener('click', handleConfirm); customConfirmCancel.addEventListener('click', handleCancel);
-    }
-    function validateForm() {
-      if (userRole === 'status') return false;
-      const isNameValid = reworkNameInput.value.trim().length > 0;
-      const isInspectorValid = inspectorInput.value.trim().length >= 3;
-      reworkNameInput.classList.toggle('required-field', !isNameValid);
-      inspectorInput.classList.toggle('required-field', !isInspectorValid);
-      return isNameValid && isInspectorValid;
     }
     async function handleReworkNameKeyDown(e) {
       if (userRole === 'status') return;
@@ -665,12 +756,12 @@
       await saveMetadataToFirebase(); renderTable(); updateStats(); validateForm();
       if (validateForm()) setTimeout(() => activateScanning(), 100);
     }
-    async function handleImportClick() { if (userRole === 'status') { showMessage("Tryb podglądu - import zablokowany", "error", 4000); return; } if (!validateForm()) { showMessage("Wprowadź nazwę i inspektora przed importem", "error", 4000); return; } codeListSmall.click(); }
+    async function handleImportClick() { if (userRole === 'status') { showMessage("Tryb podglądu - import zablokowany", "error", 4000); return; } if (!validateForm()) { showMessage("Wprowadź nazwę, inspektora i dodaj zdjęcie przed importem", "error", 4000); return; } codeListSmall.click(); }
     async function handleFileImport(event) {
       if (userRole === 'status') { showMessage("Tryb podglądu - import zablokowany", "error", 4000); event.target.value = ''; return; }
-      if (!validateForm()) { showMessage("Wprowadź nazwę i inspektora przed importem", "error", 4000); event.target.value = ''; return; }
+      if (!validateForm()) { showMessage("Wprowadź nazwę, inspektora i dodaj zdjęcie przed importem", "error", 4000); event.target.value = ''; return; }
       const file = event.target.files[0]; if (!file) { showMessage("Nie wybrano pliku", "error", 4000); return; }
-      showMessage("Ładowanie pliku...", "info", 0);
+      showMessage("Ładowanie pliku...", "info", 4000);
       const reader = new FileReader();
       reader.onload = async function(e) {
         try {
@@ -697,7 +788,7 @@
       message.className = "message"; message.style.display = "none";
       if (status === "NG") {
         noteInput.style.display = "block"; noteInput.disabled = false; noteInput.value = ""; noteInput.placeholder = currentStatusField === 'status' ? "Adnotacja dla NG (pierwszy skan) - wpisz i naciśnij Enter" : "Adnotacja dla NG (drugi skan) - wpisz i naciśnij Enter";
-        noteInput.focus(); showMessage("Wpisz adnotację i naciśnij Enter", "info", 0);
+        noteInput.focus(); showMessage("Wpisz adnotację i naciśnij Enter", "info", 4000);
         const handleNoteKeyDown = (e) => { if (e.key === "Enter") { e.preventDefault(); const note = noteInput.value.trim(); saveEntry(status, note); noteInput.removeEventListener("keydown", handleNoteKeyDown); } };
         noteInput.addEventListener("keydown", handleNoteKeyDown);
       } else if (status === "OK/NG") { saveEntry("OK/NG", ""); } else { saveEntry(status, ""); }
@@ -754,7 +845,10 @@
       const currentData = currentMode === 'rework' || userRole === 'status' ? reworkData : scanData; if (currentData.length === 0) { showMessage("Brak danych do eksportu", "error", 4000); return; }
       const name = userRole === 'status' ? reworkModeName : (currentMode === 'rework' ? reworkModeName : scanModeName) || (currentMode === 'rework' ? 'rework' : 'scan');
       const inspector = userRole === 'status' ? getAllInspectorsFromRework() : (currentMode === 'rework' ? getAllInspectorsFromData(reworkData) : inspectorInput.value.trim() || 'nieznany');
-      const dateStr = new Date().toISOString().slice(0, 10); const fileName = `${name}_${inspector.replace(/, /g, '_')}_${dateStr}.xlsx`; const wb = XLSX.utils.book_new();
+      const dateStr = new Date().toISOString().slice(0, 10); const safeName = name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
+      const safeInspector = inspector.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
+      const fileName = `${safeName}_${safeInspector}_${dateStr}.xlsx`;
+      const wb = XLSX.utils.book_new();
       if (currentMode === 'rework' || userRole === 'status') {
         const headerData = [[`Nazwa: ${name || 'Brak danych'}`], [`Inspektorzy: ${inspector || 'Brak danych'}`], [`Data eksportu: ${new Date().toLocaleString()}`], [`Tryb: Rework`], [], ["Kod", "Status", "Status po reworku", "Inspektor", "Adnotacja", "Data"]];
         const wsData = [...headerData, ...currentData.map(entry => [entry.code, entry.status||"", entry.statusAfterRework||"", entry.inspector, entry.note, entry.timestamp?new Date(entry.timestamp).toLocaleString():""])];
@@ -763,10 +857,30 @@
         XLSX.utils.book_append_sheet(wb, ws, "Skanowanie");
       } else { const exportData = currentData.filter(item => item.status !== "" && item.status !== "Nie zeskanowano").map(item => [item.code]); const ws = XLSX.utils.aoa_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, "Skanowanie"); }
       XLSX.writeFile(wb, fileName);
+      if (currentPhotoDataUrl && (currentMode === 'rework' || userRole === 'status')) {
+        try {
+          const photoFileName = `${safeName}_${safeInspector}_${dateStr}_zdjecie.png`;
+          const link = document.createElement('a');
+          link.href = currentPhotoDataUrl;
+          link.download = photoFileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          showMessage("✓ Wyeksportowano Excel i zdjęcie", "success", 4000);
+        } catch (e) { console.error("Błąd eksportu zdjęcia:", e); }
+      }
     }
-    async function resetAll() { if (userRole === 'status') { showMessage("Tryb podglądu - reset zablokowany", "error", 4000); return; } showCustomConfirm("⚠️ UWAGA! Reset danych", `Czy na pewno chcesz wyczyścić WSZYSTKIE dane w bieżącym trybie? Tej operacji nie można cofnąć.`, async () => { if (currentMode === 'rework') { reworkData = []; await saveReworkDataToFirebase(); } else { scanData = []; await saveScanDataToFirebase(); } renderTable(); updateStats(); showMessage("Wyczyszczono wszystkie dane", "success", 4000); updateInspectorList(); if (validateForm()) { setTimeout(() => activateScanning(), 300); } }); }
-    function showMessage(msg, type = "info", duration = 4000) { message.className = "message"; message.classList.add(type); message.textContent = msg; message.style.display = "block"; if (duration > 0) { setTimeout(() => { message.textContent = ""; message.className = "message"; message.style.display = "none"; }, duration); } }
-    function debugData() { console.log("=== DEBUG DANE ==="); console.log("Tryb:", currentMode); console.log("User role:", userRole); console.log("Rework data count:", reworkData.length); console.log("Scan data count:", scanData.length); console.log("isProcessing:", isProcessing); console.log("isScanActive:", isScanActive); console.log("Form valid:", validateForm()); console.log("Inspector z localStorage:", localStorage.getItem('inspector')); console.log("reworkModeName:", reworkModeName); console.log("scanModeName:", scanModeName); console.log("=================="); }
+    async function resetAll() {
+      if (userRole === 'status') { showMessage("Tryb podglądu - reset zablokowany", "error", 4000); return; }
+      showCustomConfirm("⚠️ UWAGA! Reset danych", `Czy na pewno chcesz wyczyścić WSZYSTKIE dane i usunąć zdjęcie w bieżącym trybie? Tej operacji nie można cofnąć.`, async () => {
+        if (currentMode === 'rework') { reworkData = []; await saveReworkDataToFirebase(); } else { scanData = []; await saveScanDataToFirebase(); }
+        clearPhoto();
+        renderTable(); updateStats(); showMessage("Wyczyszczono wszystkie dane i usunięto zdjęcie", "success", 4000); updateInspectorList();
+        validateForm();
+      });
+    }
+    function showMessage(msg, type = "info", duration = 4000) { message.className = "message"; message.classList.add(type); message.textContent = msg; message.style.display = "block"; if (duration > 0) { clearTimeout(message._timeout); message._timeout = setTimeout(() => { message.textContent = ""; message.className = "message"; message.style.display = "none"; }, duration); } }
+    function debugData() { console.log("=== DEBUG DANE ==="); console.log("Tryb:", currentMode); console.log("User role:", userRole); console.log("Rework data count:", reworkData.length); console.log("Scan data count:", scanData.length); console.log("isProcessing:", isProcessing); console.log("isScanActive:", isScanActive); console.log("Form valid:", validateForm()); console.log("Inspector z localStorage:", localStorage.getItem('inspector')); console.log("reworkModeName:", reworkModeName); console.log("scanModeName:", scanModeName); console.log("Photo present:", !!currentPhotoDataUrl); console.log("=================="); }
     document.getElementById('loginPassword').addEventListener('keydown', function(e) { if (e.key === 'Enter') login(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && buttons.style.display === 'flex') { buttons.style.display = 'none'; document.body.classList.remove('buttons-visible'); noteInput.style.display = 'none'; tempCode = ''; isProcessing = false; message.className = "message"; message.style.display = "none"; showMessage("Anulowano", "info", 4000); const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block'; if (validateForm()) { activateScanning(); } } });
     reworkNameInput.addEventListener('blur', async function() { if (userRole === 'inspector') { const val = reworkNameInput.value.trim(); if (currentMode === 'rework' && val !== reworkModeName) { reworkModeName = val; await saveMetadataToFirebase(); } else if (currentMode === 'scan' && val !== scanModeName) { scanModeName = val; await saveMetadataToFirebase(); } if (val && !inspectorInput.value.trim()) { setTimeout(() => inspectorInput.focus(), 100); } } });
