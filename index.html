@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -16,10 +15,14 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
   <title>R/S - Rework Scan</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js">
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js">
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js">
+  </script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: #f5f7fa; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; font-size: 14px; }
@@ -58,9 +61,11 @@
     .mode-btn.active.rework { background-color: #007acc; color: white; }
     .mode-btn.active.scan { background-color: #28a745; color: white; }
     main { margin: 0 6px 8px; background: white; padding: 8px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-    .input-row-compact { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+    .input-row-compact { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
     .input-row-compact input { flex: 1; padding: 6px 8px; font-size: 12px; border: 1px solid #ddd; border-radius: 6px; background: white; height: 34px; min-width: 0; }
-    .camera-btn { width: 34px; height: 34px; min-width: 34px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+    .input-row-compact #rework-name { flex: 2; min-width: 100px; }
+    .input-row-compact #inspector { flex: 1; min-width: 80px; }
+    .camera-btn { width: 34px; height: 34px; min-width: 34px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; flex-shrink: 0; }
     .camera-btn.active { background: #28a745; }
     .camera-btn:hover { background: #5a6268; }
     .camera-btn.active:hover { background: #218838; }
@@ -127,10 +132,10 @@
     th:nth-child(5), td:nth-child(5) { max-width: 60px; width: 60px; }
     th:nth-child(6), td:nth-child(6) { max-width: 85px; width: 85px; }
     th:nth-child(7), td:nth-child(7) { max-width: 25px; width: 25px; }
-    th { background-color: #007acc; color: white; position: sticky; top: 0; font-weight: 600; white-space: nowrap; font-size: 10px; padding: 6px 2px; }
+    th { background-color: #007acc; color: white; position: sticky; top: 0; font-weight: 600; white-space: nowrap; font-size: 10px; padding: 6px 2px; cursor: pointer; user-select: none; }
     .scan-mode th { background-color: #28a745; }
-    .status-mode th { background-color: #6c757d !important; }
-    .sort-icon { margin-left: 2px; font-size: 9px; }
+    .status-mode th { background-color: #6c757d !important; cursor: default; }
+    .sort-icon { margin-left: 2px; font-size: 9px; display: inline-block; width: 10px; }
     .status-ok { color: #28a745; font-weight: bold; font-size: 10px; }
     .status-ng { color: #dc3545; font-weight: bold; font-size: 10px; }
     .status-pending { color: #6c757d; font-style: italic; font-size: 10px; }
@@ -150,7 +155,9 @@
       .mode-selector { height: 32px; }
       .mode-btn { padding: 5px 2px; font-size: 11px; }
       .input-row-compact input { height: 32px; padding: 5px 6px; font-size: 11px; }
-      .camera-btn { width: 32px; height: 32px; min-width: 32px; }
+      .input-row-compact #rework-name { flex: 1.5; min-width: 80px; }
+      .input-row-compact #inspector { flex: 1; min-width: 60px; }
+      .camera-btn { width: 32px; height: 32px; min-width: 32px; font-size: 16px; }
       .btn-small { height: 38px; padding: 8px; font-size: 12px; }
       #codes-table { max-height: 500px; }
       table { font-size: 9px; min-width: 550px; }
@@ -173,8 +180,10 @@
       .message { font-size: 11px; padding: 6px 8px; }
     }
     @media (max-width: 360px) {
-      .input-row-compact { flex-direction: column; gap: 4px; }
-      .camera-btn { width: 30px; height: 30px; min-width: 30px; align-self: flex-end; }
+      .input-row-compact { gap: 4px; }
+      .input-row-compact #rework-name { flex: 1; min-width: 60px; font-size: 10px; }
+      .input-row-compact #inspector { flex: 1; min-width: 50px; font-size: 10px; }
+      .camera-btn { width: 28px; height: 28px; min-width: 28px; font-size: 14px; }
       table { min-width: 500px; }
       .stats-row { gap: 6px; }
       .action-links { flex-direction: column; gap: 2px; }
@@ -291,12 +300,12 @@
         <table>
           <thead>
             <tr>
-              <th onclick="sortTable('code')">Kod <span id="sort-code-icon" class="sort-icon">↓</span></th>
+              <th onclick="sortTable('code')">Kod <span id="sort-code-icon" class="sort-icon"></span></th>
               <th id="statusHeader" onclick="sortTable('status')">Status <span id="sort-status-icon" class="sort-icon"></span></th>
               <th id="statusAfterHeader" onclick="sortTable('statusAfterRework')">Po rew <span id="sort-statusAfter-icon" class="sort-icon"></span></th>
               <th id="noteHeader" onclick="sortTable('note')">Uwagi <span id="sort-note-icon" class="sort-icon"></span></th>
               <th id="inspectorHeader" onclick="sortTable('inspector')">Insp <span id="sort-inspector-icon" class="sort-icon"></span></th>
-              <th id="dateHeader" onclick="sortTable('date')">Data <span id="sort-date-icon" class="sort-icon"></span></th>
+              <th id="dateHeader" onclick="sortTable('date')">Data <span id="sort-date-icon" class="sort-icon">↓</span></th>
               <th style="width: 22px;" id="actionHeader">Akcja</th>
             </tr>
           </thead>
@@ -419,13 +428,9 @@
     }
     function handleCameraButtonClick() {
       if (userRole !== 'inspector') return;
-      if (photoVisible) {
-        hidePhotoPreview();
-      } else if (currentPhotoDataUrl) {
-        showPhotoPreview();
-      } else {
-        cameraInput.click();
-      }
+      if (photoVisible) { hidePhotoPreview(); }
+      else if (currentPhotoDataUrl) { showPhotoPreview(); }
+      else { cameraInput.click(); }
     }
     function handleCameraCapture(event) {
       const file = event.target.files[0];
@@ -440,7 +445,6 @@
         currentPhotoDataUrl = e.target.result;
         photoPreview.src = currentPhotoDataUrl;
         cameraButton.classList.add('active');
-        cameraButton.textContent = '📸';
         await savePhotoToFirebase();
         validateForm();
         showMessage("Zdjęcie dodane", "success", 5000);
@@ -464,36 +468,16 @@
       currentPhotoDataUrl = null;
       photoPreview.src = '';
       cameraButton.classList.remove('active');
-      cameraButton.textContent = '📷';
       hidePhotoPreview();
-      try {
-        const user = auth.currentUser;
-        if (user) { await database.ref(`photos/${user.uid}`).remove(); }
-      } catch (e) { console.error("Błąd usuwania zdjęcia z Firebase:", e); }
+      try { const user = auth.currentUser; if (user) { await database.ref(`photos/${user.uid}`).remove(); } } catch (e) { console.error("Błąd usuwania zdjęcia z Firebase:", e); }
     }
     async function savePhotoToFirebase() {
-      try {
-        const user = auth.currentUser;
-        if (user && currentPhotoDataUrl) {
-          await database.ref(`photos/${user.uid}`).set({ photoDataUrl: currentPhotoDataUrl, timestamp: Date.now() });
-        }
-      } catch (e) { console.error("Błąd zapisu zdjęcia do Firebase:", e); }
+      try { const user = auth.currentUser; if (user && currentPhotoDataUrl) { await database.ref(`photos/${user.uid}`).set({ photoDataUrl: currentPhotoDataUrl, timestamp: Date.now() }); } } catch (e) { console.error("Błąd zapisu zdjęcia do Firebase:", e); }
     }
     async function loadPhotoFromFirebase() {
       try {
         const user = auth.currentUser;
-        if (user) {
-          const snapshot = await database.ref(`photos/${user.uid}`).once('value');
-          if (snapshot.exists()) {
-            const photoData = snapshot.val();
-            if (photoData && photoData.photoDataUrl) {
-              currentPhotoDataUrl = photoData.photoDataUrl;
-              photoPreview.src = currentPhotoDataUrl;
-              cameraButton.classList.add('active');
-              cameraButton.textContent = '📸';
-            }
-          }
-        }
+        if (user) { const snapshot = await database.ref(`photos/${user.uid}`).once('value'); if (snapshot.exists()) { const photoData = snapshot.val(); if (photoData && photoData.photoDataUrl) { currentPhotoDataUrl = photoData.photoDataUrl; photoPreview.src = currentPhotoDataUrl; cameraButton.classList.add('active'); } } }
       } catch (e) { console.error("Błąd odczytu zdjęcia z Firebase:", e); }
     }
     function validateForm() {
@@ -503,68 +487,36 @@
       const isPhotoValid = currentPhotoDataUrl !== null;
       reworkNameInput.classList.toggle('required-field', !isNameValid);
       inspectorInput.classList.toggle('required-field', !isInspectorValid);
-      if (!isPhotoValid) {
-        cameraButton.style.border = '2px solid #dc3545';
-      } else {
-        cameraButton.style.border = 'none';
-      }
+      cameraButton.style.border = !isPhotoValid ? '2px solid #dc3545' : 'none';
       return isNameValid && isInspectorValid && isPhotoValid;
     }
     function activateScanning() {
       if (!validateForm()) {
-        let msg = "";
-        if (reworkNameInput.value.trim().length === 0) msg = "⚠️ Wprowadź nazwę reworku";
-        else if (inspectorInput.value.trim().length < 3) msg = "⚠️ Wprowadź nazwisko inspektora (min. 3 znaki)";
-        else if (!currentPhotoDataUrl) msg = "⚠️ Dodaj zdjęcie przed skanowaniem";
-        showMessage(msg, "error", 6000);
-        playFeedback('error');
-        return;
+        let msg = ""; if (reworkNameInput.value.trim().length === 0) msg = "Wprowadź nazwę reworku"; else if (inspectorInput.value.trim().length < 3) msg = "Wprowadź nazwisko inspektora (min. 3 znaki)"; else if (!currentPhotoDataUrl) msg = "Dodaj zdjęcie przed skanowaniem";
+        showMessage(msg, "error", 6000); playFeedback('error'); return;
       }
       if (userRole !== 'inspector') return;
-      isScanActive = true;
-      scanInputWrapper.classList.add('active');
-      scanPlaceholder.textContent = '✏️ Skanuj kod...';
-      barcodeBuffer = '';
-      scanValue.textContent = '';
-      hiddenScanBuffer.focus();
-      showMessage("Aktywne skanowanie - skanuj kody", "info", 5000);
+      isScanActive = true; scanInputWrapper.classList.add('active'); scanPlaceholder.textContent = '✏️ Skanuj kod...'; barcodeBuffer = ''; scanValue.textContent = ''; hiddenScanBuffer.focus(); showMessage("Aktywne skanowanie - skanuj kody", "info", 5000);
     }
     function deactivateScanning() {
-      isScanActive = false;
-      scanInputWrapper.classList.remove('active');
-      scanPlaceholder.textContent = '📷 Kliknij i skanuj kod...';
-      barcodeBuffer = '';
-      scanValue.textContent = '';
-      hiddenScanBuffer.blur();
+      isScanActive = false; scanInputWrapper.classList.remove('active'); scanPlaceholder.textContent = '📷 Kliknij i skanuj kod...'; barcodeBuffer = ''; scanValue.textContent = ''; hiddenScanBuffer.blur();
     }
     async function handleScanKeyDown(e) {
       if (!isScanActive || userRole !== 'inspector') return;
       e.preventDefault();
-      if (e.key === 'Enter') {
-        const code = barcodeBuffer.trim();
-        if (code.length >= 14) { await processScannedCodeHID(code); }
-        else if (code.length > 0) { showMessage("Kod musi mieć co najmniej 14 znaków", "error", 6000); playFeedback('error'); }
-        barcodeBuffer = ''; scanValue.textContent = ''; scanPlaceholder.textContent = '✏️ Skanuj kod...';
-      } else if (e.key === 'Escape') { deactivateScanning(); showMessage("Skanowanie anulowane", "info", 5000); }
+      if (e.key === 'Enter') { const code = barcodeBuffer.trim(); if (code.length >= 14) { await processScannedCodeHID(code); } else if (code.length > 0) { showMessage("Kod musi mieć co najmniej 14 znaków", "error", 6000); playFeedback('error'); } barcodeBuffer = ''; scanValue.textContent = ''; scanPlaceholder.textContent = '✏️ Skanuj kod...'; }
+      else if (e.key === 'Escape') { deactivateScanning(); showMessage("Skanowanie anulowane", "info", 5000); }
       else if (e.key === 'Tab') { return; }
       else if (e.key.length === 1) { barcodeBuffer += e.key; scanValue.textContent = barcodeBuffer; scanPlaceholder.textContent = ''; }
     }
     function playFeedback(type) {
       try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
         let frequency = 800; let duration = 0.2; let volume = 0.3;
         if (type === 'success' || type === 'scan-success') { frequency = 1000; duration = 0.25; volume = 0.4; gainNode.gain.setValueAtTime(volume, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration); }
         else if (type === 'error' || type === 'scan-error') { frequency = 180; duration = 0.4; volume = 0.5; gainNode.gain.setValueAtTime(volume, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration); }
-        oscillator.type = type === 'error' || type === 'scan-error' ? 'square' : 'sine';
-        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-        oscillator.start(); oscillator.stop(audioCtx.currentTime + duration);
-        if (window.navigator && window.navigator.vibrate) {
-          const vibrationPattern = type === 'error' || type === 'scan-error' ? [200, 100, 200] : [150];
-          window.navigator.vibrate(vibrationPattern);
-        }
+        oscillator.type = type === 'error' || type === 'scan-error' ? 'square' : 'sine'; oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime); oscillator.start(); oscillator.stop(audioCtx.currentTime + duration);
+        if (window.navigator && window.navigator.vibrate) { window.navigator.vibrate(type === 'error' || type === 'scan-error' ? [200, 100, 200] : [150]); }
       } catch (e) { console.log("Audio/Vibration not supported", e); }
     }
     async function processScannedCodeHID(scannedCode) {
@@ -579,17 +531,8 @@
           const matchedItem = reworkData.find(item => { if (!item || !item.code) return false; return item.code.substring(0, 14) === scannedCodePrefix; });
           if (!matchedItem) { showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 6000); playFeedback('error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
           const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block';
-          if (matchedItem.status === "") {
-            tempCode = matchedItem.code; currentStatusField = 'status'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible');
-            showMessage(`Kod znaleziony! Wybierz status (pierwszy skan): OK, NG lub OK/NG`, "info", 6000);
-            setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50);
-          } else {
-            tempCode = matchedItem.code; currentStatusField = 'statusAfterRework'; if (okNgBtn) okNgBtn.style.display = 'none';
-            buttons.style.display = "flex"; document.body.classList.add('buttons-visible');
-            const firstStatus = matchedItem.status || "Nieznany"; const statusText = firstStatus === "OK" ? "OK" : (firstStatus === "NG" ? "NG" : firstStatus);
-            message.className = "message repair-question"; message.textContent = `⚠️ Kod znaleziony. Jego status to: ${statusText}. Produkt naprawiony?`; message.style.display = "block";
-            setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50);
-          }
+          if (matchedItem.status === "") { tempCode = matchedItem.code; currentStatusField = 'status'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible'); showMessage(`Kod znaleziony! Wybierz status (pierwszy skan): OK, NG lub OK/NG`, "info", 6000); setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50); }
+          else { tempCode = matchedItem.code; currentStatusField = 'statusAfterRework'; if (okNgBtn) okNgBtn.style.display = 'none'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible'); const firstStatus = matchedItem.status || "Nieznany"; const statusText = firstStatus === "OK" ? "OK" : (firstStatus === "NG" ? "NG" : firstStatus); message.className = "message repair-question"; message.textContent = `Kod znaleziony. Status: ${statusText}. Naprawiony?`; message.style.display = "block"; setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50); }
         } else {
           const exists = scanData.some(item => item.code === code);
           if (exists) { showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 6000); playFeedback('error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
@@ -599,124 +542,51 @@
     }
     async function saveEntryScanModeHID(code) {
       const newEntry = { code: code, status: "OK", inspector: inspectorInput.value.trim(), note: "", timestamp: Date.now(), isNew: true };
-      scanData.push(newEntry); await saveScanDataToFirebase();
-      showStatusPopup("OK"); playFeedback('scan-success'); showMessage("✓ Kod zeskanowany!", "success", 5000);
-      renderTable(); updateStats(); isProcessing = false;
+      scanData.push(newEntry); await saveScanDataToFirebase(); showStatusPopup("OK"); playFeedback('scan-success'); showMessage("Kod zeskanowany!", "success", 5000);
+      renderTable(); updateStats(); isProcessing = false; scrollTableToTop();
       setTimeout(() => { if (validateForm()) { activateScanning(); } }, 500);
     }
+    function scrollTableToTop() {
+      const tableContainer = document.getElementById('codes-table');
+      if (tableContainer) { tableContainer.scrollTop = 0; }
+    }
     async function login() {
-      const password = document.getElementById('loginPassword').value;
-      const email = USER_EMAILS[selectedUserType]; loginError.textContent = '';
+      const password = document.getElementById('loginPassword').value; const email = USER_EMAILS[selectedUserType]; loginError.textContent = '';
       if (!password) { loginError.textContent = 'Wprowadź hasło'; return; }
       try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        if (user.email === USER_EMAILS.inspektor) { userRole = 'inspector'; currentUser = 'inspektor'; }
-        else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
-        currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
-        loginScreen.style.display = 'none'; appContent.style.display = 'block';
-        await loadPhotoFromFirebase();
-        await loadDataFromFirebase(); setupPermissions();
-        if (userRole === 'inspector') {
-          validateForm(); switchMode('rework'); setupRealtimeListeners();
-          importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex';
-          initNoKeyboardScanning();
-          setTimeout(() => { if (!reworkNameInput.value) { reworkNameInput.focus(); } else if (!inspectorInput.value) { inspectorInput.focus(); } else if (validateForm()) { activateScanning(); } }, 300);
-        } else {
-          showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh();
-          importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none';
-        }
+        const userCredential = await auth.signInWithEmailAndPassword(email, password); const user = userCredential.user;
+        if (user.email === USER_EMAILS.inspektor) { userRole = 'inspector'; currentUser = 'inspektor'; } else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
+        currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1); loginScreen.style.display = 'none'; appContent.style.display = 'block';
+        await loadPhotoFromFirebase(); await loadDataFromFirebase(); setupPermissions();
+        if (userRole === 'inspector') { validateForm(); switchMode('rework'); setupRealtimeListeners(); importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex'; initNoKeyboardScanning(); setTimeout(() => { if (!reworkNameInput.value) { reworkNameInput.focus(); } else if (!inspectorInput.value) { inspectorInput.focus(); } else if (validateForm()) { activateScanning(); } }, 300); }
+        else { showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh(); importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none'; }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
         sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('user', currentUser); sessionStorage.setItem('userRole', userRole);
-      } catch (error) {
-        console.error('Błąd logowania:', error);
-        if (error.code === 'auth/wrong-password') { loginError.textContent = 'Nieprawidłowe hasło'; }
-        else if (error.code === 'auth/user-not-found') { loginError.textContent = 'Użytkownik nie istnieje'; }
-        else { loginError.textContent = 'Błąd logowania. Spróbuj ponownie.'; }
-        playFeedback('error');
-      }
+      } catch (error) { console.error('Błąd logowania:', error); if (error.code === 'auth/wrong-password') { loginError.textContent = 'Nieprawidłowe hasło'; } else if (error.code === 'auth/user-not-found') { loginError.textContent = 'Użytkownik nie istnieje'; } else { loginError.textContent = 'Błąd logowania. Spróbuj ponownie.'; } playFeedback('error'); }
     }
     async function logout() {
       showCustomConfirm("Potwierdź wylogowanie", "Czy na pewno chcesz się wylogować?", async () => {
-        try {
-          await auth.signOut();
-          if (firebaseListenerActive) { database.ref(getReworkDataPath()).off(); database.ref(getScanDataPath()).off(); database.ref(getMetadataPath()).off(); firebaseListenerActive = false; }
-          if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
-          if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null; }
-          currentUser = null; userRole = null; appContent.style.display = 'none'; loginScreen.style.display = 'flex';
-          document.getElementById('loginPassword').value = ''; loginError.textContent = ''; debugBtn.style.display = 'none';
-          sessionStorage.removeItem('loggedIn'); sessionStorage.removeItem('user'); sessionStorage.removeItem('userRole');
-        } catch (error) { console.error('Błąd wylogowania:', error); }
+        try { await auth.signOut(); if (firebaseListenerActive) { database.ref(getReworkDataPath()).off(); database.ref(getScanDataPath()).off(); database.ref(getMetadataPath()).off(); firebaseListenerActive = false; } if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; } if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null; } currentUser = null; userRole = null; appContent.style.display = 'none'; loginScreen.style.display = 'flex'; document.getElementById('loginPassword').value = ''; loginError.textContent = ''; debugBtn.style.display = 'none'; sessionStorage.removeItem('loggedIn'); sessionStorage.removeItem('user'); sessionStorage.removeItem('userRole'); } catch (error) { console.error('Błąd wylogowania:', error); }
       });
     }
     auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        if (user.email === USER_EMAILS.inspektor) { userRole = 'inspector'; currentUser = 'inspektor'; }
-        else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
-        currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
-        loginScreen.style.display = 'none'; appContent.style.display = 'block';
-        await loadPhotoFromFirebase();
-        await loadDataFromFirebase(); setupPermissions();
-        if (userRole === 'inspector') {
-          validateForm(); switchMode('rework'); setupRealtimeListeners();
-          importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex';
-          initNoKeyboardScanning();
-        } else { showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh(); importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none'; }
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
-        sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('user', currentUser); sessionStorage.setItem('userRole', userRole);
-      }
+      if (user) { if (user.email === USER_EMAILS.inspektor) { userRole = 'inspector'; currentUser = 'inspektor'; } else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; } currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1); loginScreen.style.display = 'none'; appContent.style.display = 'block'; await loadPhotoFromFirebase(); await loadDataFromFirebase(); setupPermissions(); if (userRole === 'inspector') { validateForm(); switchMode('rework'); setupRealtimeListeners(); importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex'; initNoKeyboardScanning(); } else { showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh(); importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none'; } if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; } sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('user', currentUser); sessionStorage.setItem('userRole', userRole); }
     });
     async function checkSession() {
-      const user = auth.currentUser;
-      if (user) {
-        if (user.email === USER_EMAILS.inspektor) { userRole = 'inspector'; currentUser = 'inspektor'; }
-        else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
-        currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
-        loginScreen.style.display = 'none'; appContent.style.display = 'block';
-        await loadPhotoFromFirebase();
-        await loadDataFromFirebase(); setupPermissions();
-        if (userRole === 'inspector') {
-          validateForm(); switchMode('rework'); setupRealtimeListeners();
-          importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex';
-          initNoKeyboardScanning();
-        } else { showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh(); importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none'; }
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
-      }
+      const user = auth.currentUser; if (user) { if (user.email === USER_EMAILS.inspektor) { userRole = 'inspector'; currentUser = 'inspektor'; } else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; } currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1); loginScreen.style.display = 'none'; appContent.style.display = 'block'; await loadPhotoFromFirebase(); await loadDataFromFirebase(); setupPermissions(); if (userRole === 'inspector') { validateForm(); switchMode('rework'); setupRealtimeListeners(); importLink.style.display = 'inline'; exportLink.style.display = 'inline'; resetIcon.style.display = 'flex'; initNoKeyboardScanning(); } else { showStatusInfo(); renderTable(); updateStats(); setupStatusRefresh(); importLink.style.display = 'none'; exportLink.style.display = 'inline'; resetIcon.style.display = 'none'; } if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; } }
     }
     function getReworkDataPath() { return 'reworkData'; }
     function getScanDataPath() { return 'scanData'; }
     function getMetadataPath() { return 'metadata'; }
-    async function saveMetadataToFirebase() {
-      try {
-        const metadata = { reworkName: reworkModeName, scanName: scanModeName, lastUpdate: Date.now(), mode: currentMode, user: currentUser };
-        await database.ref(getMetadataPath()).set(metadata);
-        return true;
-      } catch (error) { console.error('Błąd zapisu metadanych:', error); return false; }
-    }
-    async function saveReworkDataToFirebase() {
-      try { await database.ref(getReworkDataPath()).set(reworkData); await saveMetadataToFirebase(); console.log('Dane rework zapisane do Firebase'); return true; }
-      catch (error) { console.error('Błąd zapisu danych rework:', error); showMessage('Błąd zapisu do bazy danych', 'error', 5000); return false; }
-    }
-    async function saveScanDataToFirebase() {
-      try { await database.ref(getScanDataPath()).set(scanData); await saveMetadataToFirebase(); console.log('Dane scan zapisane do Firebase'); return true; }
-      catch (error) { console.error('Błąd zapisu danych scan:', error); showMessage('Błąd zapisu do bazy danych', 'error', 5000); return false; }
-    }
+    async function saveMetadataToFirebase() { try { const metadata = { reworkName: reworkModeName, scanName: scanModeName, lastUpdate: Date.now(), mode: currentMode, user: currentUser }; await database.ref(getMetadataPath()).set(metadata); return true; } catch (error) { console.error('Błąd zapisu metadanych:', error); return false; } }
+    async function saveReworkDataToFirebase() { try { await database.ref(getReworkDataPath()).set(reworkData); await saveMetadataToFirebase(); return true; } catch (error) { console.error('Błąd zapisu danych rework:', error); showMessage('Błąd zapisu do bazy danych', 'error', 5000); return false; } }
+    async function saveScanDataToFirebase() { try { await database.ref(getScanDataPath()).set(scanData); await saveMetadataToFirebase(); return true; } catch (error) { console.error('Błąd zapisu danych scan:', error); showMessage('Błąd zapisu do bazy danych', 'error', 5000); return false; } }
     async function loadDataFromFirebase() {
       try {
-        const reworkRef = database.ref(getReworkDataPath()); const reworkSnapshot = await reworkRef.once('value');
-        reworkData = reworkSnapshot.exists() ? reworkSnapshot.val() : [];
-        reworkData = reworkData.map(item => ({ ...item, statusAfterRework: item.statusAfterRework !== undefined ? item.statusAfterRework : "" }));
-        const scanRef = database.ref(getScanDataPath()); const scanSnapshot = await scanRef.once('value');
-        scanData = scanSnapshot.exists() ? scanSnapshot.val() : [];
+        const reworkRef = database.ref(getReworkDataPath()); const reworkSnapshot = await reworkRef.once('value'); reworkData = reworkSnapshot.exists() ? reworkSnapshot.val() : []; reworkData = reworkData.map(item => ({ ...item, statusAfterRework: item.statusAfterRework !== undefined ? item.statusAfterRework : "" }));
+        const scanRef = database.ref(getScanDataPath()); const scanSnapshot = await scanRef.once('value'); scanData = scanSnapshot.exists() ? scanSnapshot.val() : [];
         const metadataRef = database.ref(getMetadataPath()); const metadataSnapshot = await metadataRef.once('value');
-        if (metadataSnapshot.exists()) {
-          const metadata = metadataSnapshot.val();
-          if (metadata) {
-            reworkModeName = metadata.reworkName || ''; scanModeName = metadata.scanName || '';
-            if (userRole === 'status') { currentReworkName.textContent = reworkModeName || '-'; }
-            else { reworkNameInput.value = currentMode === 'rework' ? reworkModeName : scanModeName; }
-          }
-        }
+        if (metadataSnapshot.exists()) { const metadata = metadataSnapshot.val(); if (metadata) { reworkModeName = metadata.reworkName || ''; scanModeName = metadata.scanName || ''; if (userRole === 'status') { currentReworkName.textContent = reworkModeName || '-'; } else { reworkNameInput.value = currentMode === 'rework' ? reworkModeName : scanModeName; } } }
         const savedInspector = localStorage.getItem('inspector'); if (savedInspector) { inspectorInput.value = savedInspector; }
         if (userRole === 'status') { currentInspectorNames.textContent = getAllInspectorsFromRework(); }
         return true;
@@ -724,35 +594,15 @@
     }
     function setupRealtimeListeners() {
       if (firebaseListenerActive) { database.ref(getReworkDataPath()).off(); database.ref(getScanDataPath()).off(); database.ref(getMetadataPath()).off(); }
-      database.ref(getReworkDataPath()).on('value', (snapshot) => {
-        if (snapshot.exists()) { let data = snapshot.val() || []; reworkData = data.map(item => ({ ...item, statusAfterRework: item.statusAfterRework !== undefined ? item.statusAfterRework : "" })); }
-        else { reworkData = []; }
-        renderTable(); updateStats(); if (userRole === 'status') { currentInspectorNames.textContent = getAllInspectorsFromRework(); }
-      });
+      database.ref(getReworkDataPath()).on('value', (snapshot) => { if (snapshot.exists()) { let data = snapshot.val() || []; reworkData = data.map(item => ({ ...item, statusAfterRework: item.statusAfterRework !== undefined ? item.statusAfterRework : "" })); } else { reworkData = []; } renderTable(); updateStats(); if (userRole === 'status') { currentInspectorNames.textContent = getAllInspectorsFromRework(); } });
       database.ref(getScanDataPath()).on('value', (snapshot) => { if (snapshot.exists()) { scanData = snapshot.val() || []; } else { scanData = []; } if (currentMode === 'scan') { renderTable(); updateStats(); } });
       database.ref(getMetadataPath()).on('value', (snapshot) => { if (snapshot.exists()) { const metadata = snapshot.val(); if (metadata) { reworkModeName = metadata.reworkName || ''; scanModeName = metadata.scanName || ''; if (userRole === 'status') { currentReworkName.textContent = reworkModeName || '-'; } } } });
       firebaseListenerActive = true;
     }
-    function setupStatusRefresh() {
-      if (refreshInterval) clearInterval(refreshInterval);
-      refreshInterval = setInterval(async () => {
-        if (userRole === 'status') {
-          try {
-            const reworkRef = database.ref(getReworkDataPath()); const reworkSnapshot = await reworkRef.once('value');
-            if (reworkSnapshot.exists()) { let data = reworkSnapshot.val() || []; reworkData = data.map(item => ({ ...item, statusAfterRework: item.statusAfterRework !== undefined ? item.statusAfterRework : "" })); }
-            else { reworkData = []; }
-            const scanRef = database.ref(getScanDataPath()); const scanSnapshot = await scanRef.once('value');
-            scanData = scanSnapshot.exists() ? scanSnapshot.val() : [];
-            renderTable(); updateStats(); currentInspectorNames.textContent = getAllInspectorsFromRework();
-          } catch (error) { console.error('Błąd odświeżania danych:', error); }
-        }
-      }, 30000);
-    }
+    function setupStatusRefresh() { if (refreshInterval) clearInterval(refreshInterval); refreshInterval = setInterval(async () => { if (userRole === 'status') { try { const reworkRef = database.ref(getReworkDataPath()); const reworkSnapshot = await reworkRef.once('value'); if (reworkSnapshot.exists()) { let data = reworkSnapshot.val() || []; reworkData = data.map(item => ({ ...item, statusAfterRework: item.statusAfterRework !== undefined ? item.statusAfterRework : "" })); } else { reworkData = []; } const scanRef = database.ref(getScanDataPath()); const scanSnapshot = await scanRef.once('value'); scanData = scanSnapshot.exists() ? scanSnapshot.val() : []; renderTable(); updateStats(); currentInspectorNames.textContent = getAllInspectorsFromRework(); } catch (error) { console.error('Błąd odświeżania danych:', error); } } }, 30000); }
     function setupPermissions() {
       const isInspector = userRole === 'inspector'; const isStatus = userRole === 'status';
-      modeSelector.style.display = isInspector ? 'flex' : 'none';
-      inspectorControls.style.display = isInspector ? 'block' : 'none';
-      statusInfo.style.display = isStatus ? 'block' : 'none';
+      modeSelector.style.display = isInspector ? 'flex' : 'none'; inspectorControls.style.display = isInspector ? 'block' : 'none'; statusInfo.style.display = isStatus ? 'block' : 'none';
       cameraButton.style.display = isInspector ? 'flex' : 'none';
       if (isStatus) { actionHeader.style.display = 'none'; document.querySelector('table thead').classList.add('status-mode'); scanInputWrapper.style.display = 'none'; photoPreviewContainer.style.display = 'none'; }
       else { actionHeader.style.display = ''; document.querySelector('table thead').classList.remove('status-mode'); validateForm(); scanInputWrapper.style.display = 'block'; }
@@ -760,29 +610,14 @@
       else if (isInspector && currentMode === 'scan') { importLink.style.display = 'none'; }
     }
     function showStatusInfo() { currentReworkName.textContent = reworkModeName || '-'; currentInspectorNames.textContent = getAllInspectorsFromRework(); }
-    function showCustomConfirm(title, msg, onConfirm) {
-      customConfirmTitle.textContent = title; customConfirmMessage.textContent = msg; customConfirmOverlay.style.display = 'flex';
-      const handleConfirm = () => { customConfirmOverlay.style.display = 'none'; customConfirmOk.removeEventListener('click', handleConfirm); customConfirmCancel.removeEventListener('click', handleCancel); onConfirm(); };
-      const handleCancel = () => { customConfirmOverlay.style.display = 'none'; customConfirmOk.removeEventListener('click', handleConfirm); customConfirmCancel.removeEventListener('click', handleCancel); };
-      customConfirmOk.addEventListener('click', handleConfirm); customConfirmCancel.addEventListener('click', handleCancel);
-    }
-    async function handleReworkNameKeyDown(e) {
-      if (userRole === 'status') return;
-      if (e.key === "Enter") { e.preventDefault(); if (reworkNameInput.value.trim().length > 0) { if (currentMode === 'rework') reworkModeName = reworkNameInput.value.trim(); else scanModeName = reworkNameInput.value.trim(); await saveMetadataToFirebase(); inspectorInput.focus(); validateForm(); } }
-    }
-    async function handleInspectorKeyDown(e) {
-      if (userRole === 'status') return;
-      if (e.key === "Enter") { e.preventDefault(); if (inspectorInput.value.trim().length >= 3) { localStorage.setItem('inspector', inspectorInput.value.trim()); await saveMetadataToFirebase(); if (validateForm()) { activateScanning(); } } }
-    }
+    function showCustomConfirm(title, msg, onConfirm) { customConfirmTitle.textContent = title; customConfirmMessage.textContent = msg; customConfirmOverlay.style.display = 'flex'; const handleConfirm = () => { customConfirmOverlay.style.display = 'none'; customConfirmOk.removeEventListener('click', handleConfirm); customConfirmCancel.removeEventListener('click', handleCancel); onConfirm(); }; const handleCancel = () => { customConfirmOverlay.style.display = 'none'; customConfirmOk.removeEventListener('click', handleConfirm); customConfirmCancel.removeEventListener('click', handleCancel); }; customConfirmOk.addEventListener('click', handleConfirm); customConfirmCancel.addEventListener('click', handleCancel); }
+    async function handleReworkNameKeyDown(e) { if (userRole === 'status') return; if (e.key === "Enter") { e.preventDefault(); if (reworkNameInput.value.trim().length > 0) { if (currentMode === 'rework') reworkModeName = reworkNameInput.value.trim(); else scanModeName = reworkNameInput.value.trim(); await saveMetadataToFirebase(); inspectorInput.focus(); validateForm(); } } }
+    async function handleInspectorKeyDown(e) { if (userRole === 'status') return; if (e.key === "Enter") { e.preventDefault(); if (inspectorInput.value.trim().length >= 3) { localStorage.setItem('inspector', inspectorInput.value.trim()); await saveMetadataToFirebase(); if (validateForm()) { activateScanning(); } } } }
     async function switchMode(mode) {
       if (userRole !== 'inspector') return;
-      if (currentMode === 'rework') reworkModeName = reworkNameInput.value.trim();
-      else scanModeName = reworkNameInput.value.trim();
-      currentMode = mode;
-      reworkModeBtn.classList.toggle('active', mode === 'rework'); scanModeBtn.classList.toggle('active', mode === 'scan');
-      mainContent.classList.toggle('scan-mode', mode === 'scan');
-      reworkNameInput.placeholder = mode === 'rework' ? 'Nazwa reworku*' : 'Nazwa skanu*';
-      reworkNameInput.value = mode === 'rework' ? reworkModeName : scanModeName;
+      if (currentMode === 'rework') reworkModeName = reworkNameInput.value.trim(); else scanModeName = reworkNameInput.value.trim();
+      currentMode = mode; reworkModeBtn.classList.toggle('active', mode === 'rework'); scanModeBtn.classList.toggle('active', mode === 'scan'); mainContent.classList.toggle('scan-mode', mode === 'scan');
+      reworkNameInput.placeholder = mode === 'rework' ? 'Nazwa reworku*' : 'Nazwa skanu*'; reworkNameInput.value = mode === 'rework' ? reworkModeName : scanModeName;
       importLink.style.display = mode === 'rework' ? 'inline' : 'none';
       await saveMetadataToFirebase(); renderTable(); updateStats(); validateForm();
       if (validateForm()) setTimeout(() => activateScanning(), 100);
@@ -794,15 +629,7 @@
       const file = event.target.files[0]; if (!file) { showMessage("Nie wybrano pliku", "error", 5000); return; }
       showMessage("Ładowanie pliku...", "info", 5000);
       const reader = new FileReader();
-      reader.onload = async function(e) {
-        try {
-          const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' });
-          if (workbook.SheetNames.length === 0) { throw new Error("Brak arkuszy w pliku"); }
-          const firstSheetName = workbook.SheetNames[0]; const worksheet = workbook.Sheets[firstSheetName];
-          if (!worksheet || !worksheet['!ref']) { throw new Error("Arkusz jest pusty"); }
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); await processImportedData(jsonData);
-        } catch (error) { console.error(error); showMessage(`Błąd: ${error.message}`, "error", 6000); }
-      };
+      reader.onload = async function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); if (workbook.SheetNames.length === 0) { throw new Error("Brak arkuszy w pliku"); } const firstSheetName = workbook.SheetNames[0]; const worksheet = workbook.Sheets[firstSheetName]; if (!worksheet || !worksheet['!ref']) { throw new Error("Arkusz jest pusty"); } const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); await processImportedData(jsonData); } catch (error) { console.error(error); showMessage(`Błąd: ${error.message}`, "error", 6000); } };
       reader.onerror = function() { showMessage("Błąd odczytu pliku. Spróbuj ponownie.", "error", 5000); };
       reader.readAsArrayBuffer(file);
     }
@@ -811,39 +638,57 @@
       for (let i = 0; i < rawData.length; i++) { const row = rawData[i]; if (!row || row.length === 0) continue; const code = String(row[0] || '').trim().toUpperCase(); if (code.length >= 14) { const exists = currentData.some(item => currentMode === 'rework' ? item.code.substring(0, 14) === code.substring(0, 14) : item.code === code); if (!exists) { newCodes.push({ code: code, status: "", statusAfterRework: "", inspector: "", note: "", timestamp: null, isNew: true }); codesFound++; } } else { skippedRows++; } }
       if (codesFound === 0) { throw new Error("Nie znaleziono poprawnych kodów w pliku (wymagane min. 14 znaków)"); }
       if (currentMode === 'rework') { reworkData = [...reworkData, ...newCodes]; await saveReworkDataToFirebase(); } else { scanData = [...scanData, ...newCodes]; await saveScanDataToFirebase(); }
-      showMessage(`✓ Zaimportowano ${codesFound} kodów (pominięto ${skippedRows})`, "success", 5000); renderTable(); updateStats(); codeListSmall.value = ''; updateInspectorList();
+      showMessage(`Zaimportowano ${codesFound} kodów (pominięto ${skippedRows})`, "success", 5000); renderTable(); updateStats(); codeListSmall.value = ''; updateInspectorList(); scrollTableToTop();
     }
     function selectStatus(status) {
       if (userRole === 'status') return; if (!tempCode) { showMessage("Brak kodu do przypisania statusu", "error", 5000); return; }
-      buttons.style.display = "none"; document.body.classList.remove('buttons-visible'); const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block';
-      message.className = "message"; message.style.display = "none";
-      if (status === "NG") {
-        noteInput.style.display = "block"; noteInput.disabled = false; noteInput.value = ""; noteInput.placeholder = currentStatusField === 'status' ? "Adnotacja dla NG (pierwszy skan) - wpisz i naciśnij Enter" : "Adnotacja dla NG (drugi skan) - wpisz i naciśnij Enter";
-        noteInput.focus(); showMessage("Wpisz adnotację i naciśnij Enter", "info", 6000);
-        const handleNoteKeyDown = (e) => { if (e.key === "Enter") { e.preventDefault(); const note = noteInput.value.trim(); saveEntry(status, note); noteInput.removeEventListener("keydown", handleNoteKeyDown); } };
-        noteInput.addEventListener("keydown", handleNoteKeyDown);
-      } else if (status === "OK/NG") { saveEntry("OK/NG", ""); } else { saveEntry(status, ""); }
+      buttons.style.display = "none"; document.body.classList.remove('buttons-visible'); const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block'; message.className = "message"; message.style.display = "none";
+      if (status === "NG") { noteInput.style.display = "block"; noteInput.disabled = false; noteInput.value = ""; noteInput.placeholder = currentStatusField === 'status' ? "Adnotacja dla NG (pierwszy skan) - wpisz i naciśnij Enter" : "Adnotacja dla NG (drugi skan) - wpisz i naciśnij Enter"; noteInput.focus(); showMessage("Wpisz adnotację i naciśnij Enter", "info", 6000); const handleNoteKeyDown = (e) => { if (e.key === "Enter") { e.preventDefault(); const note = noteInput.value.trim(); saveEntry(status, note); noteInput.removeEventListener("keydown", handleNoteKeyDown); } }; noteInput.addEventListener("keydown", handleNoteKeyDown); }
+      else if (status === "OK/NG") { saveEntry("OK/NG", ""); } else { saveEntry(status, ""); }
     }
     async function saveEntry(status, note) {
       if (!tempCode) { showMessage("Brak kodu do zapisania", "error", 5000); return; }
-      let codeIndex = -1;
-      if (currentMode === 'rework') { const tempCodePrefix = tempCode.substring(0, 14); codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === tempCodePrefix); }
-      else { codeIndex = scanData.findIndex(item => item.code === tempCode); }
+      let codeIndex = -1; if (currentMode === 'rework') { const tempCodePrefix = tempCode.substring(0, 14); codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === tempCodePrefix); } else { codeIndex = scanData.findIndex(item => item.code === tempCode); }
       const existingEntry = codeIndex !== -1 ? (currentMode === 'rework' ? reworkData[codeIndex] : scanData[codeIndex]) : null;
       const updateData = { inspector: inspectorInput.value.trim(), timestamp: Date.now(), isNew: true };
       if (currentStatusField === 'status') { if (status === "OK") { updateData.status = "OK"; updateData.statusAfterRework = "OK"; } else if (status === "NG") { updateData.status = "NG"; updateData.note = note; } else if (status === "OK/NG") { updateData.status = "NG"; updateData.statusAfterRework = "OK"; } if (existingEntry && existingEntry.note && status !== "NG") { updateData.note = existingEntry.note; } }
       else { updateData.statusAfterRework = status; if (status === "NG") { updateData.note = note; } else if (existingEntry && existingEntry.note) { updateData.note = existingEntry.note; } }
-      if (codeIndex !== -1) { if (currentMode === 'rework') { reworkData[codeIndex] = { ...reworkData[codeIndex], ...updateData }; } else { scanData[codeIndex] = { ...scanData[codeIndex], ...updateData }; } }
-      else if (currentMode === 'scan') { const newEntry = { code: tempCode, ...updateData }; scanData.push(newEntry); }
+      if (codeIndex !== -1) { if (currentMode === 'rework') { reworkData[codeIndex] = { ...reworkData[codeIndex], ...updateData }; } else { scanData[codeIndex] = { ...scanData[codeIndex], ...updateData }; } } else if (currentMode === 'scan') { const newEntry = { code: tempCode, ...updateData }; scanData.push(newEntry); }
       if (currentMode === 'rework') { await saveReworkDataToFirebase(); } else { await saveScanDataToFirebase(); }
       noteInput.value = ""; noteInput.style.display = "none"; noteInput.disabled = true; tempCode = '';
-      const displayStatus = (status === "OK/NG") ? "OK/NG" : status; showStatusPopup(displayStatus); playFeedback('success'); showMessage(`✓ Kod oznaczony jako ${status}`, "success", 5000);
-      renderTable(); updateStats(); updateInspectorList(); isProcessing = false;
+      const displayStatus = (status === "OK/NG") ? "OK/NG" : status; showStatusPopup(displayStatus); playFeedback('success'); showMessage(`Kod oznaczony jako ${status}`, "success", 5000);
+      renderTable(); updateStats(); updateInspectorList(); isProcessing = false; scrollTableToTop();
       setTimeout(() => { if (validateForm()) { activateScanning(); } }, 500);
     }
     function renderTable() {
       const currentData = currentMode === 'rework' ? reworkData : scanData;
-      const sortedData = [...currentData].sort((a, b) => { const aTime = a.timestamp || 0; const bTime = b.timestamp || 0; if (aTime !== bTime) { return bTime - aTime; } const aCode = a.code || ""; const bCode = b.code || ""; return aCode.localeCompare(bCode); });
+      let sortedData = [...currentData];
+      sortedData.sort((a, b) => {
+        const aTime = a.timestamp || 0;
+        const bTime = b.timestamp || 0;
+        if (aTime === 0 && bTime > 0) return 1;
+        if (bTime === 0 && aTime > 0) return -1;
+        if (currentSort.field === 'date') {
+          const dateCompare = currentSort.direction === 'asc' ? aTime - bTime : bTime - aTime;
+          if (dateCompare !== 0) return dateCompare;
+        }
+        let compareResult = 0;
+        const aCode = (a.code || "").toUpperCase();
+        const bCode = (b.code || "").toUpperCase();
+        switch (currentSort.field) {
+          case 'code': compareResult = aCode.localeCompare(bCode); break;
+          case 'status': compareResult = (a.status || "").localeCompare(b.status || ""); break;
+          case 'statusAfterRework': compareResult = (a.statusAfterRework || "").localeCompare(b.statusAfterRework || ""); break;
+          case 'note': compareResult = (a.note || "").localeCompare(b.note || ""); break;
+          case 'inspector': compareResult = (a.inspector || "").localeCompare(b.inspector || ""); break;
+          case 'date':
+          default: if (aTime !== bTime) { compareResult = bTime - aTime; } else { compareResult = aCode.localeCompare(bCode); } break;
+        }
+        if (currentSort.field !== 'date' && compareResult === 0) {
+          compareResult = bTime - aTime;
+        }
+        return currentSort.direction === 'asc' ? compareResult : -compareResult;
+      });
       const displayData = currentMode === 'scan' ? sortedData.filter(item => item.status !== "" && item.status !== "Nie zeskanowano") : sortedData;
       list.innerHTML = displayData.map(entry => {
         let statusText = entry.status; if (currentMode === 'scan' && statusText === "OK") { statusText = ""; } else if (statusText === "") { statusText = ""; }
@@ -853,8 +698,24 @@
       }).join('');
       if (currentMode === 'rework') { reworkData.forEach(entry => { if (entry) entry.isNew = false; }); } else { scanData.forEach(entry => { if (entry) entry.isNew = false; }); }
     }
-    function sortTable(field) { if (currentSort.field === field) { currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc'; } else { currentSort.field = field; currentSort.direction = 'asc'; } updateSortIcons(); renderTable(); }
-    function updateSortIcons() { document.querySelectorAll('.sort-icon').forEach(icon => { icon.textContent = ''; }); const iconId = `sort-${currentSort.field}-icon`; const icon = document.getElementById(iconId); if (icon) { icon.textContent = currentSort.direction === 'asc' ? '↑' : '↓'; } }
+    function sortTable(field) {
+      if (userRole === 'status') return;
+      if (currentSort.field === field) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.field = field;
+        currentSort.direction = 'asc';
+      }
+      updateSortIcons();
+      renderTable();
+      scrollTableToTop();
+    }
+    function updateSortIcons() {
+      document.querySelectorAll('.sort-icon').forEach(icon => { icon.textContent = ''; });
+      const iconId = `sort-${currentSort.field}-icon`;
+      const icon = document.getElementById(iconId);
+      if (icon) { icon.textContent = currentSort.direction === 'asc' ? '↑' : '↓'; }
+    }
     function updateStats() {
       if (currentMode === 'rework') {
         const total = reworkData.length; const scanned = reworkData.filter(entry => entry.status === "OK" || entry.status === "NG").length; const toScan = total - scanned; const ok = reworkData.filter(entry => entry.status === "OK").length; const ng = reworkData.filter(entry => entry.status === "NG").length; const percent = scanned > 0 ? Math.round((ng / scanned) * 100) : 0;
@@ -870,48 +731,22 @@
       }
     }
     window.showRemoveConfirmation = function(code) { if (userRole === 'status') { showMessage("Tryb podglądu - edycja zablokowana", "error", 5000); return; } codeToRemove = code; const title = currentMode === 'rework' ? "Resetowanie statusu" : "Usuwanie kodu"; const msg = currentMode === 'rework' ? "Czy na pewno chcesz zresetować status tego kodu (pierwszy i po reworku)?" : "Czy na pewno chcesz trwale usunąć ten kod z listy?"; showCustomConfirm(title, msg, confirmRemoval); };
-    async function confirmRemoval() { if (!codeToRemove) return; let success = false; if (currentMode === 'rework') { const codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === codeToRemove.substring(0, 14)); if (codeIndex !== -1) { reworkData[codeIndex] = { ...reworkData[codeIndex], status: "", statusAfterRework: "", inspector: "", note: "", timestamp: null, isNew: false }; await saveReworkDataToFirebase(); showMessage(`↻ Zresetowano statusy kodu`, "success", 5000); success = true; } } else { const codeIndex = scanData.findIndex(item => item.code === codeToRemove); if (codeIndex !== -1) { scanData.splice(codeIndex, 1); await saveScanDataToFirebase(); showMessage(`✕ Usunięto kod`, "success", 5000); success = true; } } if (success) { renderTable(); updateStats(); codeToRemove = null; updateInspectorList(); if (validateForm()) { setTimeout(() => activateScanning(), 100); } } }
+    async function confirmRemoval() { if (!codeToRemove) return; let success = false; if (currentMode === 'rework') { const codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === codeToRemove.substring(0, 14)); if (codeIndex !== -1) { reworkData[codeIndex] = { ...reworkData[codeIndex], status: "", statusAfterRework: "", inspector: "", note: "", timestamp: null, isNew: false }; await saveReworkDataToFirebase(); showMessage(`Zresetowano statusy kodu`, "success", 5000); success = true; } } else { const codeIndex = scanData.findIndex(item => item.code === codeToRemove); if (codeIndex !== -1) { scanData.splice(codeIndex, 1); await saveScanDataToFirebase(); showMessage(`Usunięto kod`, "success", 5000); success = true; } } if (success) { renderTable(); updateStats(); codeToRemove = null; updateInspectorList(); if (validateForm()) { setTimeout(() => activateScanning(), 100); } } }
     function getAllInspectorsFromData(data) { const inspectors = new Set(); data.forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } }); return Array.from(inspectors).sort().join(', ') || 'nieznany'; }
     async function exportToExcel() {
       const currentData = currentMode === 'rework' || userRole === 'status' ? reworkData : scanData; if (currentData.length === 0) { showMessage("Brak danych do eksportu", "error", 5000); return; }
       const name = userRole === 'status' ? reworkModeName : (currentMode === 'rework' ? reworkModeName : scanModeName) || (currentMode === 'rework' ? 'rework' : 'scan');
       const inspector = userRole === 'status' ? getAllInspectorsFromRework() : (currentMode === 'rework' ? getAllInspectorsFromData(reworkData) : inspectorInput.value.trim() || 'nieznany');
-      const dateStr = new Date().toISOString().slice(0, 10); const safeName = name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
-      const safeInspector = inspector.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
-      const fileName = `${safeName}_${safeInspector}_${dateStr}.xlsx`;
-      const wb = XLSX.utils.book_new();
-      if (currentMode === 'rework' || userRole === 'status') {
-        const headerData = [[`Nazwa: ${name || 'Brak danych'}`], [`Inspektorzy: ${inspector || 'Brak danych'}`], [`Data eksportu: ${new Date().toLocaleString()}`], [`Tryb: Rework`], [], ["Kod", "Status", "Status po reworku", "Inspektor", "Adnotacja", "Data"]];
-        const wsData = [...headerData, ...currentData.map(entry => [entry.code, entry.status||"", entry.statusAfterRework||"", entry.inspector, entry.note, entry.timestamp?new Date(entry.timestamp).toLocaleString():""])];
-        const ws = XLSX.utils.aoa_to_sheet(wsData); if (!ws['!merges']) ws['!merges'] = [];
-        ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }); ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }); ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 5 } }); ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 5 } }); ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 5 } });
-        XLSX.utils.book_append_sheet(wb, ws, "Skanowanie");
-      } else { const exportData = currentData.filter(item => item.status !== "" && item.status !== "Nie zeskanowano").map(item => [item.code]); const ws = XLSX.utils.aoa_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, "Skanowanie"); }
+      const dateStr = new Date().toISOString().slice(0, 10); const safeName = name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_'); const safeInspector = inspector.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
+      const fileName = `${safeName}_${safeInspector}_${dateStr}.xlsx`; const wb = XLSX.utils.book_new();
+      if (currentMode === 'rework' || userRole === 'status') { const headerData = [[`Nazwa: ${name || 'Brak danych'}`], [`Inspektorzy: ${inspector || 'Brak danych'}`], [`Data eksportu: ${new Date().toLocaleString()}`], [`Tryb: Rework`], [], ["Kod", "Status", "Status po reworku", "Inspektor", "Adnotacja", "Data"]]; const wsData = [...headerData, ...currentData.map(entry => [entry.code, entry.status||"", entry.statusAfterRework||"", entry.inspector, entry.note, entry.timestamp?new Date(entry.timestamp).toLocaleString():""])]; const ws = XLSX.utils.aoa_to_sheet(wsData); if (!ws['!merges']) ws['!merges'] = []; ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }); ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }); ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 5 } }); ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 5 } }); ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 5 } }); XLSX.utils.book_append_sheet(wb, ws, "Skanowanie"); }
+      else { const exportData = currentData.filter(item => item.status !== "" && item.status !== "Nie zeskanowano").map(item => [item.code]); const ws = XLSX.utils.aoa_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, "Skanowanie"); }
       XLSX.writeFile(wb, fileName);
-      if (currentPhotoDataUrl && (currentMode === 'rework' || userRole === 'status')) {
-        try {
-          const photoFileName = `${safeName}_${safeInspector}_${dateStr}_zdjecie.png`;
-          const link = document.createElement('a');
-          link.href = currentPhotoDataUrl;
-          link.download = photoFileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          showMessage("✓ Wyeksportowano Excel i zdjęcie", "success", 5000);
-        } catch (e) { console.error("Błąd eksportu zdjęcia:", e); }
-      }
+      if (currentPhotoDataUrl && (currentMode === 'rework' || userRole === 'status')) { try { const photoFileName = `${safeName}_${safeInspector}_${dateStr}_zdjecie.png`; const link = document.createElement('a'); link.href = currentPhotoDataUrl; link.download = photoFileName; document.body.appendChild(link); link.click(); document.body.removeChild(link); showMessage("Wyeksportowano Excel i zdjęcie", "success", 5000); } catch (e) { console.error("Błąd eksportu zdjęcia:", e); } }
     }
-    async function resetAll() {
-      if (userRole === 'status') { showMessage("Tryb podglądu - reset zablokowany", "error", 5000); return; }
-      showCustomConfirm("⚠️ UWAGA! Reset danych", `Czy na pewno chcesz wyczyścić WSZYSTKIE dane i usunąć zdjęcie w bieżącym trybie? Tej operacji nie można cofnąć.`, async () => {
-        if (currentMode === 'rework') { reworkData = []; await saveReworkDataToFirebase(); } else { scanData = []; await saveScanDataToFirebase(); }
-        await clearPhoto();
-        renderTable(); updateStats(); showMessage("Wyczyszczono wszystkie dane i usunięto zdjęcie", "success", 5000); updateInspectorList();
-        validateForm();
-      });
-    }
+    async function resetAll() { if (userRole === 'status') { showMessage("Tryb podglądu - reset zablokowany", "error", 5000); return; } showCustomConfirm("UWAGA! Reset danych", `Czy na pewno chcesz wyczyścić WSZYSTKIE dane i usunąć zdjęcie w bieżącym trybie? Tej operacji nie można cofnąć.`, async () => { if (currentMode === 'rework') { reworkData = []; await saveReworkDataToFirebase(); } else { scanData = []; await saveScanDataToFirebase(); } await clearPhoto(); renderTable(); updateStats(); showMessage("Wyczyszczono wszystkie dane i usunięto zdjęcie", "success", 5000); updateInspectorList(); validateForm(); }); }
     function showMessage(msg, type = "info", duration = 5000) { message.className = "message"; message.classList.add(type); message.textContent = msg; message.style.display = "block"; if (duration > 0) { clearTimeout(message._timeout); message._timeout = setTimeout(() => { message.textContent = ""; message.className = "message"; message.style.display = "none"; }, duration); } }
-    function debugData() { console.log("=== DEBUG DANE ==="); console.log("Tryb:", currentMode); console.log("User role:", userRole); console.log("Rework data count:", reworkData.length); console.log("Scan data count:", scanData.length); console.log("isProcessing:", isProcessing); console.log("isScanActive:", isScanActive); console.log("Form valid:", validateForm()); console.log("Inspector z localStorage:", localStorage.getItem('inspector')); console.log("reworkModeName:", reworkModeName); console.log("scanModeName:", scanModeName); console.log("Photo present:", !!currentPhotoDataUrl); console.log("=================="); }
+    function debugData() { console.log("=== DEBUG DANE ==="); console.log("Tryb:", currentMode); console.log("User role:", userRole); console.log("Rework data count:", reworkData.length); console.log("Scan data count:", scanData.length); console.log("isProcessing:", isProcessing); console.log("isScanActive:", isScanActive); console.log("Form valid:", validateForm()); console.log("Inspector z localStorage:", localStorage.getItem('inspector')); console.log("reworkModeName:", reworkModeName); console.log("scanModeName:", scanModeName); console.log("Photo present:", !!currentPhotoDataUrl); console.log("Sort:", currentSort.field, currentSort.direction); console.log("=================="); }
     document.getElementById('loginPassword').addEventListener('keydown', function(e) { if (e.key === 'Enter') login(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && buttons.style.display === 'flex') { buttons.style.display = 'none'; document.body.classList.remove('buttons-visible'); noteInput.style.display = 'none'; tempCode = ''; isProcessing = false; message.className = "message"; message.style.display = "none"; showMessage("Anulowano", "info", 5000); const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block'; if (validateForm()) { activateScanning(); } } });
     reworkNameInput.addEventListener('blur', async function() { if (userRole === 'inspector') { const val = reworkNameInput.value.trim(); if (currentMode === 'rework' && val !== reworkModeName) { reworkModeName = val; await saveMetadataToFirebase(); } else if (currentMode === 'scan' && val !== scanModeName) { scanModeName = val; await saveMetadataToFirebase(); } if (val && !inspectorInput.value.trim()) { setTimeout(() => inspectorInput.focus(), 100); } } });
