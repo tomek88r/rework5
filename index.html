@@ -63,10 +63,6 @@
     .slot-btn.slot2.active { border-color: #dc3545; background: #ffe6e6; color: #dc3545; }
     .slot-label { font-size: 10px; font-weight: 500; color: #666; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; min-width: 0; }
     .slot-label.has-name { color: #007acc; font-weight: 600; font-size: 11px; }
-    .slot-photo-btn { width: 28px; height: 28px; min-width: 28px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
-    .slot-photo-btn.has-photo { background: #28a745; }
-    .slot-photo-btn:hover { background: #5a6268; }
-    .slot-photo-btn.has-photo:hover { background: #218838; }
 
     .mode-selector { display: flex; margin: 6px; border-radius: 6px; overflow: hidden; background: #e0e0e0; height: 34px; }
     .mode-btn { flex: 1; padding: 6px 3px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
@@ -159,10 +155,19 @@
     #code-list-small { display: none; }
     #cameraInput { display: none; }
     .required-indicator { color: #dc3545; font-weight: bold; }
+    
+    /* Styl dla sekcji info w trybie status */
+    .status-info-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; }
+    .status-info-row .status-photo-btn-inline { width: 28px; height: 28px; min-width: 28px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+    .status-photo-btn-inline.has-photo { background: #28a745; }
+    .status-photo-btn-inline:hover { background: #5a6268; }
+    .status-photo-btn-inline.has-photo:hover { background: #218838; }
+    
     .status-photo-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 5000; }
     .status-photo-modal.visible { display: flex; }
     .status-photo-modal img { max-width: 95%; max-height: 85vh; border-radius: 8px; }
     .status-photo-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.9); color: #333; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    
     @media (max-width: 480px) {
       body { font-size: 12px; }
       .logo { font-size: 18px; }
@@ -173,7 +178,6 @@
       .slot-selector { margin: 4px auto; gap: 6px; }
       .slot-btn { width: 34px; height: 28px; font-size: 12px; }
       .slot-label { font-size: 9px; max-width: 90px; }
-      .slot-photo-btn { width: 24px; height: 24px; min-width: 24px; font-size: 11px; }
       .mode-selector { height: 32px; }
       .mode-btn { padding: 5px 2px; font-size: 11px; }
       .input-row-compact input { height: 32px; padding: 5px 6px; font-size: 11px; }
@@ -262,19 +266,17 @@
         </div>
       </div>
     </div>
-    <!-- Modal do podglądu zdjęcia w trybie status -->
+    <!-- Modal do podglądu zdjęcia -->
     <div class="status-photo-modal" id="statusPhotoModal">
       <button class="status-photo-close" onclick="closeStatusPhoto()">✕</button>
       <img id="statusPhotoImg" src="" alt="Zdjęcie" />
     </div>
-    <!-- Slot selector - wyśrodkowany z dynamicznymi etykietami -->
+    <!-- Slot selector - wyśrodkowany -->
     <div class="slot-selector" id="slotSelector" style="display: none;">
       <button id="slot1Btn" class="slot-btn slot1 active" onclick="switchSlot(1)">1</button>
       <span class="slot-label" id="slot1Label"></span>
-      <button class="slot-photo-btn" id="slot1PhotoBtn" onclick="viewSlotPhoto(1)" title="Podgląd zdjęcia" style="display:none;">📷</button>
       <button id="slot2Btn" class="slot-btn slot2" onclick="switchSlot(2)">2</button>
       <span class="slot-label" id="slot2Label"></span>
-      <button class="slot-photo-btn" id="slot2PhotoBtn" onclick="viewSlotPhoto(2)" title="Podgląd zdjęcia" style="display:none;">📷</button>
     </div>
     <div class="mode-selector" id="modeSelector" style="display: none;">
       <button id="reworkModeBtn" class="mode-btn rework active" onclick="switchMode('rework')">Rework</button>
@@ -308,10 +310,11 @@
       </div>
       <div id="statusInfo" style="display: none;">
         <div style="background: #e8f5e9; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; flex-wrap: wrap; gap: 4px;">
+          <div class="status-info-row">
             <div><strong>Slot 1:</strong> <span id="currentReworkName1">-</span></div>
             <div><strong>Slot 2:</strong> <span id="currentReworkName2">-</span></div>
             <div><strong>Inspektorzy:</strong> <span id="currentInspectorNames">-</span></div>
+            <button class="status-photo-btn-inline" id="statusPhotoBtn" onclick="viewCurrentSlotPhoto()" title="Podgląd zdjęcia" style="display:none;">📷</button>
           </div>
         </div>
       </div>
@@ -397,8 +400,7 @@
     const slot2Btn = document.getElementById("slot2Btn");
     const slot1Label = document.getElementById("slot1Label");
     const slot2Label = document.getElementById("slot2Label");
-    const slot1PhotoBtn = document.getElementById("slot1PhotoBtn");
-    const slot2PhotoBtn = document.getElementById("slot2PhotoBtn");
+    const statusPhotoBtn = document.getElementById("statusPhotoBtn");
     const statusPhotoModal = document.getElementById("statusPhotoModal");
     const statusPhotoImg = document.getElementById("statusPhotoImg");
     
@@ -481,10 +483,6 @@
       return reworkModeNameSlot2 || scanModeNameSlot2 || '';
     }
 
-    function getSlotPhotoUrl(slot) {
-      return slot === 1 ? currentPhotoDataUrlSlot1 : currentPhotoDataUrlSlot2;
-    }
-
     function updateSlotLabels() {
       const name1 = getSlotName(1);
       const name2 = getSlotName(2);
@@ -495,20 +493,23 @@
       slot2Label.textContent = name2 || '';
       slot2Label.className = 'slot-label' + (name2 ? ' has-name' : '');
       
-      // Pokaż/ukryj przyciski podglądu zdjęcia
-      slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
-      slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
-      slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
-      slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
-      
       if (userRole === 'status') {
         currentReworkName1.textContent = reworkModeNameSlot1 || '-';
         currentReworkName2.textContent = reworkModeNameSlot2 || '-';
+        updateStatusPhotoButton();
       }
     }
 
-    function viewSlotPhoto(slot) {
-      const url = getSlotPhotoUrl(slot);
+    function updateStatusPhotoButton() {
+      const photoUrl = getCurrentPhotoDataUrl();
+      if (statusPhotoBtn) {
+        statusPhotoBtn.style.display = photoUrl ? 'flex' : 'none';
+        statusPhotoBtn.classList.toggle('has-photo', !!photoUrl);
+      }
+    }
+
+    function viewCurrentSlotPhoto() {
+      const url = getCurrentPhotoDataUrl();
       if (url) {
         statusPhotoImg.src = url;
         statusPhotoModal.classList.add('visible');
@@ -629,6 +630,7 @@
           }
           updatePhotoPreviewForCurrentSlot();
           updateSlotLabels();
+          if (userRole === 'status') updateStatusPhotoButton();
         }
       } catch (e) { console.error("Błąd odczytu zdjęcia z Firebase:", e); }
     }
@@ -772,6 +774,7 @@
           currentReworkName1.textContent = reworkModeNameSlot1 || '-';
           currentReworkName2.textContent = reworkModeNameSlot2 || '-';
           currentInspectorNames.textContent = getAllInspectorsFromRework();
+          updateStatusPhotoButton();
         }
         return true;
       } catch (error) { console.error('Błąd odczytu z Firebase:', error); showMessage('Błąd odczytu z bazy danych', 'error', 6000); return false; }
@@ -783,6 +786,9 @@
         inspectorInput.value = getSavedInspector();
         updatePhotoPreviewForCurrentSlot();
         validateForm();
+      }
+      if (userRole === 'status') {
+        updateStatusPhotoButton();
       }
       renderTable();
       updateStats();
@@ -857,10 +863,7 @@
           exportLink.style.display = 'inline';
           resetIcon.style.display = 'none';
           slotSelector.style.display = 'flex';
-          slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
-          slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
-          slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
-          slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
+          updateStatusPhotoButton();
         }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
         sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('user', currentUser); sessionStorage.setItem('userRole', userRole);
@@ -921,12 +924,9 @@
         currentReworkName1.textContent = reworkModeNameSlot1 || '-';
         currentReworkName2.textContent = reworkModeNameSlot2 || '-';
         currentInspectorNames.textContent = getAllInspectorsFromRework();
+        updateStatusPhotoButton();
         renderTable();
         updateStats();
-        slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
-        slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
-        slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
-        slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
       }
       
       if (userRole === 'inspector') {
@@ -1040,6 +1040,7 @@
             renderTable();
             updateStats();
             updateSlotLabels();
+            if (userRole === 'status') updateStatusPhotoButton();
           }
           if (userRole === 'status') {
             currentReworkName1.textContent = reworkModeNameSlot1 || '-';
@@ -1076,6 +1077,7 @@
               if (userRole === 'status') {
                 currentReworkName1.textContent = reworkModeNameSlot1 || '-';
                 currentReworkName2.textContent = reworkModeNameSlot2 || '-';
+                updateStatusPhotoButton();
               }
             }
           }
@@ -1111,10 +1113,7 @@
             currentReworkName1.textContent = reworkModeNameSlot1 || '-';
             currentReworkName2.textContent = reworkModeNameSlot2 || '-';
             currentInspectorNames.textContent = getAllInspectorsFromRework();
-            slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
-            slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
-            slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
-            slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
+            updateStatusPhotoButton();
           } catch (error) { console.error('Błąd odświeżania danych:', error); }
         }
       }, 30000);
@@ -1136,17 +1135,12 @@
         document.querySelector('table thead').classList.add('status-mode');
         scanInputWrapper.style.display = 'none';
         photoPreviewContainer.style.display = 'none';
-        slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
-        slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
-        slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
-        slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
+        updateStatusPhotoButton();
       } else {
         actionHeader.style.display = '';
         document.querySelector('table thead').classList.remove('status-mode');
         validateForm();
         scanInputWrapper.style.display = 'block';
-        slot1PhotoBtn.style.display = 'none';
-        slot2PhotoBtn.style.display = 'none';
       }
       if (isInspector && currentMode === 'rework') { importLink.style.display = 'inline'; }
       else if (isInspector && currentMode === 'scan') { importLink.style.display = 'none'; }
@@ -1156,6 +1150,7 @@
       currentReworkName1.textContent = reworkModeNameSlot1 || '-';
       currentReworkName2.textContent = reworkModeNameSlot2 || '-';
       currentInspectorNames.textContent = getAllInspectorsFromRework();
+      updateStatusPhotoButton();
     }
 
     function showCustomConfirm(title, msg, onConfirm) {
