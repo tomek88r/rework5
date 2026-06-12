@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -484,12 +483,23 @@
       return reworkModeNameSlot2 || scanModeNameSlot2 || '';
     }
 
-    function getInspectorsForSlot(slot) {
+    // Pobiera inspektorów TYLKO z wpisów które mają status (OK/NG) - ignoruje puste/resetowane
+    function getActiveInspectorsForSlot(slot) {
       const reworkData = slot === 1 ? reworkDataSlot1 : reworkDataSlot2;
       const scanData = slot === 1 ? scanDataSlot1 : scanDataSlot2;
       const inspectors = new Set();
-      reworkData.forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } });
-      scanData.forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } });
+      // Z rework - tylko wpisy z niepustym statusem
+      reworkData.forEach(item => { 
+        if (item.inspector && item.inspector.trim() !== '' && item.status && item.status.trim() !== '') { 
+          inspectors.add(item.inspector.trim()); 
+        }
+      });
+      // Z scan - tylko wpisy z niepustym statusem
+      scanData.forEach(item => { 
+        if (item.inspector && item.inspector.trim() !== '' && item.status && item.status.trim() !== '') { 
+          inspectors.add(item.inspector.trim()); 
+        }
+      });
       return Array.from(inspectors).sort().join(', ') || '-';
     }
 
@@ -497,9 +507,11 @@
       const name1 = getSlotName(1);
       const name2 = getSlotName(2);
       
+      // Slot 1 - pokazuj nazwę tylko jeśli nie jest pusta
       slot1Label.textContent = name1 || '';
       slot1Label.className = 'slot-label' + (name1 ? ' has-name' : '');
       
+      // Slot 2 - pokazuj nazwę tylko jeśli nie jest pusta
       slot2Label.textContent = name2 || '';
       slot2Label.className = 'slot-label' + (name2 ? ' has-name' : '');
       
@@ -510,7 +522,7 @@
       if (userRole !== 'status') return;
       
       const slotName = getSlotName(currentSlot);
-      const slotInspectors = getInspectorsForSlot(currentSlot);
+      const slotInspectors = getActiveInspectorsForSlot(currentSlot);
       statusSlotLabel.textContent = `Slot ${currentSlot}:`;
       currentReworkName.textContent = slotName || '-';
       currentInspectorNames.textContent = slotInspectors;
@@ -1059,6 +1071,15 @@
               }
               updateSlotLabels();
             }
+          } else {
+            if (slot === 1) {
+              reworkModeNameSlot1 = '';
+              scanModeNameSlot1 = '';
+            } else {
+              reworkModeNameSlot2 = '';
+              scanModeNameSlot2 = '';
+            }
+            updateSlotLabels();
           }
         });
       }
@@ -1085,6 +1106,29 @@
               const scanSnapshot = await scanRef.once('value');
               if (slot === 1) scanDataSlot1 = scanSnapshot.exists() ? scanSnapshot.val() : [];
               else scanDataSlot2 = scanSnapshot.exists() ? scanSnapshot.val() : [];
+
+              const metadataRef = database.ref(`metadata_slot${slot}`);
+              const metadataSnapshot = await metadataRef.once('value');
+              if (metadataSnapshot.exists()) {
+                const metadata = metadataSnapshot.val();
+                if (metadata) {
+                  if (slot === 1) {
+                    reworkModeNameSlot1 = metadata.reworkName || '';
+                    scanModeNameSlot1 = metadata.scanName || '';
+                  } else {
+                    reworkModeNameSlot2 = metadata.reworkName || '';
+                    scanModeNameSlot2 = metadata.scanName || '';
+                  }
+                }
+              } else {
+                if (slot === 1) {
+                  reworkModeNameSlot1 = '';
+                  scanModeNameSlot1 = '';
+                } else {
+                  reworkModeNameSlot2 = '';
+                  scanModeNameSlot2 = '';
+                }
+              }
             }
             renderTable();
             updateStats();
@@ -1515,6 +1559,7 @@
         const reworkData = getReworkData();
         const codeIndex = reworkData.findIndex(item => item.code.substring(0, 14) === codeToRemove.substring(0, 14));
         if (codeIndex !== -1) {
+          // Resetujemy status ORAZ inspektora - żeby nie był już liczony
           reworkData[codeIndex] = { ...reworkData[codeIndex], status: "", statusAfterRework: "", inspector: "", note: "", timestamp: null, isNew: false };
           setReworkData(reworkData);
           await saveReworkDataToFirebase();
@@ -1551,8 +1596,8 @@
         ? (currentSlot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2)
         : getCurrentModeName() || (currentMode === 'rework' ? 'rework' : 'scan');
       const inspector = userRole === 'status'
-        ? getInspectorsForSlot(currentSlot)
-        : (currentMode === 'rework' ? getInspectorsForSlot(currentSlot) : inspectorInput.value.trim() || 'nieznany');
+        ? getActiveInspectorsForSlot(currentSlot)
+        : (currentMode === 'rework' ? getActiveInspectorsForSlot(currentSlot) : inspectorInput.value.trim() || 'nieznany');
       const dateStr = new Date().toISOString().slice(0, 10);
       const safeName = name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
       const safeInspector = inspector.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
@@ -1614,6 +1659,9 @@
           setScanData([]);
           await saveScanDataToFirebase();
         }
+        // Czyścimy też nazwę w metadanych
+        setCurrentModeName('');
+        await saveMetadataToFirebase();
         await clearPhoto();
         renderTable();
         updateStats();
@@ -1639,18 +1687,10 @@
       console.log("Tryb:", currentMode);
       console.log("Slot:", currentSlot);
       console.log("User role:", userRole);
-      console.log("Rework data slot 1 count:", reworkDataSlot1.length);
-      console.log("Rework data slot 2 count:", reworkDataSlot2.length);
-      console.log("Scan data slot 1 count:", scanDataSlot1.length);
-      console.log("Scan data slot 2 count:", scanDataSlot2.length);
       console.log("reworkModeNameSlot1:", reworkModeNameSlot1);
       console.log("reworkModeNameSlot2:", reworkModeNameSlot2);
-      console.log("scanModeNameSlot1:", scanModeNameSlot1);
-      console.log("scanModeNameSlot2:", scanModeNameSlot2);
-      console.log("Photo slot 1 present:", !!currentPhotoDataUrlSlot1);
-      console.log("Photo slot 2 present:", !!currentPhotoDataUrlSlot2);
-      console.log("Inspectors slot 1:", getInspectorsForSlot(1));
-      console.log("Inspectors slot 2:", getInspectorsForSlot(2));
+      console.log("Active inspectors slot 1:", getActiveInspectorsForSlot(1));
+      console.log("Active inspectors slot 2:", getActiveInspectorsForSlot(2));
       console.log("==================");
     }
 
