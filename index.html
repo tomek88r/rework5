@@ -156,9 +156,12 @@
     #cameraInput { display: none; }
     .required-indicator { color: #dc3545; font-weight: bold; }
     
-    /* Styl dla sekcji info w trybie status */
-    .status-info-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; }
-    .status-info-row .status-photo-btn-inline { width: 28px; height: 28px; min-width: 28px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+    /* Status info bar */
+    .status-info-bar { background: #e8f5e9; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11px; }
+    .status-info-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
+    .status-info-left .status-info-item { white-space: nowrap; }
+    .status-info-left .status-info-item strong { font-size: 11px; }
+    .status-photo-btn-inline { width: 28px; height: 28px; min-width: 28px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; flex-shrink: 0; margin-left: auto; }
     .status-photo-btn-inline.has-photo { background: #28a745; }
     .status-photo-btn-inline:hover { background: #5a6268; }
     .status-photo-btn-inline.has-photo:hover { background: #218838; }
@@ -204,6 +207,8 @@
       .scan-display { font-size: 12px; }
       .photo-preview { max-height: 180px; }
       .message { font-size: 11px; padding: 6px 8px; }
+      .status-info-bar { font-size: 10px; padding: 6px 8px; }
+      .status-info-left { gap: 8px; }
     }
     @media (max-width: 360px) {
       .input-row-compact { gap: 4px; }
@@ -266,12 +271,10 @@
         </div>
       </div>
     </div>
-    <!-- Modal do podglądu zdjęcia -->
     <div class="status-photo-modal" id="statusPhotoModal">
       <button class="status-photo-close" onclick="closeStatusPhoto()">✕</button>
       <img id="statusPhotoImg" src="" alt="Zdjęcie" />
     </div>
-    <!-- Slot selector - wyśrodkowany -->
     <div class="slot-selector" id="slotSelector" style="display: none;">
       <button id="slot1Btn" class="slot-btn slot1 active" onclick="switchSlot(1)">1</button>
       <span class="slot-label" id="slot1Label"></span>
@@ -309,13 +312,12 @@
         <input id="note" placeholder="Adnotacja - wpisz i naciśnij Enter" disabled style="display: none;" />
       </div>
       <div id="statusInfo" style="display: none;">
-        <div style="background: #e8f5e9; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
-          <div class="status-info-row">
-            <div><strong>Slot 1:</strong> <span id="currentReworkName1">-</span></div>
-            <div><strong>Slot 2:</strong> <span id="currentReworkName2">-</span></div>
-            <div><strong>Inspektorzy:</strong> <span id="currentInspectorNames">-</span></div>
-            <button class="status-photo-btn-inline" id="statusPhotoBtn" onclick="viewCurrentSlotPhoto()" title="Podgląd zdjęcia" style="display:none;">📷</button>
+        <div class="status-info-bar">
+          <div class="status-info-left">
+            <div class="status-info-item"><strong id="statusSlotLabel">Slot 1:</strong> <span id="currentReworkName">-</span></div>
+            <div class="status-info-item"><strong>Inspektorzy:</strong> <span id="currentInspectorNames">-</span></div>
           </div>
+          <button class="status-photo-btn-inline" id="statusPhotoBtn" onclick="viewCurrentSlotPhoto()" title="Podgląd zdjęcia" style="display:none;">📷</button>
         </div>
       </div>
       <div class="message" id="message"></div>
@@ -387,8 +389,8 @@
     const modeSelector = document.getElementById("modeSelector");
     const inspectorControls = document.getElementById("inspectorControls");
     const statusInfo = document.getElementById("statusInfo");
-    const currentReworkName1 = document.getElementById("currentReworkName1");
-    const currentReworkName2 = document.getElementById("currentReworkName2");
+    const statusSlotLabel = document.getElementById("statusSlotLabel");
+    const currentReworkName = document.getElementById("currentReworkName");
     const currentInspectorNames = document.getElementById("currentInspectorNames");
     const debugBtn = document.getElementById("debugBtn");
     const scanInputWrapper = document.getElementById("scanInputWrapper");
@@ -493,14 +495,17 @@
       slot2Label.textContent = name2 || '';
       slot2Label.className = 'slot-label' + (name2 ? ' has-name' : '');
       
-      if (userRole === 'status') {
-        currentReworkName1.textContent = reworkModeNameSlot1 || '-';
-        currentReworkName2.textContent = reworkModeNameSlot2 || '-';
-        updateStatusPhotoButton();
-      }
+      updateStatusInfoBar();
     }
 
-    function updateStatusPhotoButton() {
+    function updateStatusInfoBar() {
+      if (userRole !== 'status') return;
+      
+      const slotName = getSlotName(currentSlot);
+      statusSlotLabel.textContent = `Slot ${currentSlot}:`;
+      currentReworkName.textContent = slotName || '-';
+      currentInspectorNames.textContent = getAllInspectorsFromRework();
+      
       const photoUrl = getCurrentPhotoDataUrl();
       if (statusPhotoBtn) {
         statusPhotoBtn.style.display = photoUrl ? 'flex' : 'none';
@@ -537,8 +542,6 @@
       [...reworkDataSlot1, ...reworkDataSlot2].forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } });
       return Array.from(inspectors).sort().join(', ') || '-';
     }
-
-    function updateInspectorList() { if (userRole === 'status') { currentInspectorNames.textContent = getAllInspectorsFromRework(); } }
 
     function selectUserType(type) {
       selectedUserType = type;
@@ -630,7 +633,6 @@
           }
           updatePhotoPreviewForCurrentSlot();
           updateSlotLabels();
-          if (userRole === 'status') updateStatusPhotoButton();
         }
       } catch (e) { console.error("Błąd odczytu zdjęcia z Firebase:", e); }
     }
@@ -770,12 +772,6 @@
         }
         updateUIForCurrentSlot();
         updateSlotLabels();
-        if (userRole === 'status') {
-          currentReworkName1.textContent = reworkModeNameSlot1 || '-';
-          currentReworkName2.textContent = reworkModeNameSlot2 || '-';
-          currentInspectorNames.textContent = getAllInspectorsFromRework();
-          updateStatusPhotoButton();
-        }
         return true;
       } catch (error) { console.error('Błąd odczytu z Firebase:', error); showMessage('Błąd odczytu z bazy danych', 'error', 6000); return false; }
     }
@@ -787,9 +783,7 @@
         updatePhotoPreviewForCurrentSlot();
         validateForm();
       }
-      if (userRole === 'status') {
-        updateStatusPhotoButton();
-      }
+      updateStatusInfoBar();
       renderTable();
       updateStats();
       updateSlotLabels();
@@ -855,7 +849,7 @@
             else if (validateForm()) { activateScanning(); }
           }, 300);
         } else {
-          showStatusInfo();
+          updateStatusInfoBar();
           renderTable();
           updateStats();
           setupStatusRefresh();
@@ -863,7 +857,6 @@
           exportLink.style.display = 'inline';
           resetIcon.style.display = 'none';
           slotSelector.style.display = 'flex';
-          updateStatusPhotoButton();
         }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
         sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('user', currentUser); sessionStorage.setItem('userRole', userRole);
@@ -920,15 +913,6 @@
       
       updateUIForCurrentSlot();
       
-      if (userRole === 'status') {
-        currentReworkName1.textContent = reworkModeNameSlot1 || '-';
-        currentReworkName2.textContent = reworkModeNameSlot2 || '-';
-        currentInspectorNames.textContent = getAllInspectorsFromRework();
-        updateStatusPhotoButton();
-        renderTable();
-        updateStats();
-      }
-      
       if (userRole === 'inspector') {
         setupRealtimeListeners();
         importLink.style.display = currentMode === 'rework' ? 'inline' : 'none';
@@ -965,7 +949,7 @@
           slotSelector.style.display = 'flex';
           initNoKeyboardScanning();
         } else {
-          showStatusInfo();
+          updateStatusInfoBar();
           renderTable();
           updateStats();
           setupStatusRefresh();
@@ -1004,7 +988,7 @@
           slotSelector.style.display = 'flex';
           initNoKeyboardScanning();
         } else {
-          showStatusInfo();
+          updateStatusInfoBar();
           renderTable();
           updateStats();
           setupStatusRefresh();
@@ -1040,12 +1024,6 @@
             renderTable();
             updateStats();
             updateSlotLabels();
-            if (userRole === 'status') updateStatusPhotoButton();
-          }
-          if (userRole === 'status') {
-            currentReworkName1.textContent = reworkModeNameSlot1 || '-';
-            currentReworkName2.textContent = reworkModeNameSlot2 || '-';
-            currentInspectorNames.textContent = getAllInspectorsFromRework();
           }
         });
         
@@ -1074,11 +1052,6 @@
                 scanModeNameSlot2 = metadata.scanName || '';
               }
               updateSlotLabels();
-              if (userRole === 'status') {
-                currentReworkName1.textContent = reworkModeNameSlot1 || '-';
-                currentReworkName2.textContent = reworkModeNameSlot2 || '-';
-                updateStatusPhotoButton();
-              }
             }
           }
         });
@@ -1110,10 +1083,6 @@
             renderTable();
             updateStats();
             updateSlotLabels();
-            currentReworkName1.textContent = reworkModeNameSlot1 || '-';
-            currentReworkName2.textContent = reworkModeNameSlot2 || '-';
-            currentInspectorNames.textContent = getAllInspectorsFromRework();
-            updateStatusPhotoButton();
           } catch (error) { console.error('Błąd odświeżania danych:', error); }
         }
       }, 30000);
@@ -1135,7 +1104,7 @@
         document.querySelector('table thead').classList.add('status-mode');
         scanInputWrapper.style.display = 'none';
         photoPreviewContainer.style.display = 'none';
-        updateStatusPhotoButton();
+        updateStatusInfoBar();
       } else {
         actionHeader.style.display = '';
         document.querySelector('table thead').classList.remove('status-mode');
@@ -1144,13 +1113,6 @@
       }
       if (isInspector && currentMode === 'rework') { importLink.style.display = 'inline'; }
       else if (isInspector && currentMode === 'scan') { importLink.style.display = 'none'; }
-    }
-
-    function showStatusInfo() {
-      currentReworkName1.textContent = reworkModeNameSlot1 || '-';
-      currentReworkName2.textContent = reworkModeNameSlot2 || '-';
-      currentInspectorNames.textContent = getAllInspectorsFromRework();
-      updateStatusPhotoButton();
     }
 
     function showCustomConfirm(title, msg, onConfirm) {
@@ -1275,7 +1237,7 @@
       renderTable();
       updateStats();
       codeListSmall.value = '';
-      updateInspectorList();
+      updateSlotLabels();
       scrollTableToTop();
     }
 
@@ -1363,7 +1325,7 @@
       showMessage(`Kod oznaczony jako ${status}`, "success", 5000);
       renderTable();
       updateStats();
-      updateInspectorList();
+      updateSlotLabels();
       isProcessing = false;
       scrollTableToTop();
       setTimeout(() => { if (validateForm()) { activateScanning(); } }, 500);
@@ -1569,7 +1531,7 @@
         renderTable();
         updateStats();
         codeToRemove = null;
-        updateInspectorList();
+        updateSlotLabels();
         if (validateForm()) { setTimeout(() => activateScanning(), 100); }
       }
     }
@@ -1656,7 +1618,7 @@
         renderTable();
         updateStats();
         showMessage(`Wyczyszczono wszystkie dane i usunięto zdjęcie`, "success", 5000);
-        updateInspectorList();
+        updateSlotLabels();
         validateForm();
       });
     }
