@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -484,13 +483,11 @@
       return reworkModeNameSlot2 || scanModeNameSlot2 || '';
     }
 
-    // Pobiera inspektorów TYLKO z wpisów które mają status OK lub NG (widoczne na liście)
     function getActiveInspectorsForSlot(slot) {
       const reworkData = slot === 1 ? reworkDataSlot1 : reworkDataSlot2;
       const scanData = slot === 1 ? scanDataSlot1 : scanDataSlot2;
       const inspectors = new Set();
       
-      // Z rework - tylko wpisy ze statusem OK lub NG i niepustym inspektorem
       reworkData.forEach(item => { 
         const itemStatus = item.status || '';
         const itemInspector = (item.inspector || '').trim();
@@ -498,7 +495,6 @@
           inspectors.add(itemInspector); 
         }
       });
-      // Z scan - tylko wpisy ze statusem OK lub NG i niepustym inspektorem
       scanData.forEach(item => { 
         const itemStatus = item.status || '';
         const itemInspector = (item.inspector || '').trim();
@@ -613,8 +609,9 @@
     }
 
     function showPhotoPreview() {
-      if (!getCurrentPhotoDataUrl()) return;
-      photoPreview.src = getCurrentPhotoDataUrl();
+      const url = getCurrentPhotoDataUrl();
+      if (!url) return;
+      photoPreview.src = url;
       photoPreviewContainer.classList.add('visible');
       photoVisible = true;
     }
@@ -1690,10 +1687,8 @@
       console.log("Tryb:", currentMode);
       console.log("Slot:", currentSlot);
       console.log("User role:", userRole);
-      console.log("Rework data slot 1:", reworkDataSlot1);
-      console.log("Rework data slot 2:", reworkDataSlot2);
-      console.log("Scan data slot 1:", scanDataSlot1);
-      console.log("Scan data slot 2:", scanDataSlot2);
+      console.log("reworkModeNameSlot1:", reworkModeNameSlot1);
+      console.log("reworkModeNameSlot2:", reworkModeNameSlot2);
       console.log("Active inspectors slot 1:", getActiveInspectorsForSlot(1));
       console.log("Active inspectors slot 2:", getActiveInspectorsForSlot(2));
       console.log("==================");
