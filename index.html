@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -55,12 +56,17 @@
     .login-btn:active { transform: scale(0.98); }
     .login-error { color: #dc3545; text-align: center; margin: 8px 0; min-height: 18px; font-size: 12px; }
 
-    /* Slot selector */
-    .slot-selector { display: flex; margin: 6px; gap: 4px; align-items: center; justify-content: center; }
-    .slot-btn { width: 38px; height: 32px; border-radius: 6px; border: 2px solid #e0e0e0; background: white; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    /* Slot selector - wyśrodkowany */
+    .slot-selector { display: flex; margin: 6px auto; gap: 8px; align-items: center; justify-content: center; padding: 4px 0; }
+    .slot-btn { width: 38px; height: 32px; border-radius: 6px; border: 2px solid #e0e0e0; background: white; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .slot-btn.slot1.active { border-color: #007acc; background: #e6f2ff; color: #007acc; }
     .slot-btn.slot2.active { border-color: #dc3545; background: #ffe6e6; color: #dc3545; }
-    .slot-label { font-size: 11px; font-weight: 600; color: #666; margin: 0 4px; }
+    .slot-label { font-size: 10px; font-weight: 500; color: #666; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; min-width: 0; }
+    .slot-label.has-name { color: #007acc; font-weight: 600; font-size: 11px; }
+    .slot-photo-btn { width: 28px; height: 28px; min-width: 28px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+    .slot-photo-btn.has-photo { background: #28a745; }
+    .slot-photo-btn:hover { background: #5a6268; }
+    .slot-photo-btn.has-photo:hover { background: #218838; }
 
     .mode-selector { display: flex; margin: 6px; border-radius: 6px; overflow: hidden; background: #e0e0e0; height: 34px; }
     .mode-btn { flex: 1; padding: 6px 3px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
@@ -153,6 +159,10 @@
     #code-list-small { display: none; }
     #cameraInput { display: none; }
     .required-indicator { color: #dc3545; font-weight: bold; }
+    .status-photo-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 5000; }
+    .status-photo-modal.visible { display: flex; }
+    .status-photo-modal img { max-width: 95%; max-height: 85vh; border-radius: 8px; }
+    .status-photo-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.9); color: #333; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     @media (max-width: 480px) {
       body { font-size: 12px; }
       .logo { font-size: 18px; }
@@ -160,8 +170,10 @@
       .action-links { font-size: 10px; gap: 4px; }
       .reset-icon-small { width: 20px; height: 20px; font-size: 12px; }
       main { padding: 6px; }
-      .slot-selector { margin: 4px; gap: 2px; }
+      .slot-selector { margin: 4px auto; gap: 6px; }
       .slot-btn { width: 34px; height: 28px; font-size: 12px; }
+      .slot-label { font-size: 9px; max-width: 90px; }
+      .slot-photo-btn { width: 24px; height: 24px; min-width: 24px; font-size: 11px; }
       .mode-selector { height: 32px; }
       .mode-btn { padding: 5px 2px; font-size: 11px; }
       .input-row-compact input { height: 32px; padding: 5px 6px; font-size: 11px; }
@@ -250,12 +262,19 @@
         </div>
       </div>
     </div>
-    <!-- Slot selector - przełączanie między slotem 1 i 2 -->
+    <!-- Modal do podglądu zdjęcia w trybie status -->
+    <div class="status-photo-modal" id="statusPhotoModal">
+      <button class="status-photo-close" onclick="closeStatusPhoto()">✕</button>
+      <img id="statusPhotoImg" src="" alt="Zdjęcie" />
+    </div>
+    <!-- Slot selector - wyśrodkowany z dynamicznymi etykietami -->
     <div class="slot-selector" id="slotSelector" style="display: none;">
       <button id="slot1Btn" class="slot-btn slot1 active" onclick="switchSlot(1)">1</button>
-      <span class="slot-label" id="slot1Label">Slot 1</span>
+      <span class="slot-label" id="slot1Label"></span>
+      <button class="slot-photo-btn" id="slot1PhotoBtn" onclick="viewSlotPhoto(1)" title="Podgląd zdjęcia" style="display:none;">📷</button>
       <button id="slot2Btn" class="slot-btn slot2" onclick="switchSlot(2)">2</button>
-      <span class="slot-label" id="slot2Label">Slot 2</span>
+      <span class="slot-label" id="slot2Label"></span>
+      <button class="slot-photo-btn" id="slot2PhotoBtn" onclick="viewSlotPhoto(2)" title="Podgląd zdjęcia" style="display:none;">📷</button>
     </div>
     <div class="mode-selector" id="modeSelector" style="display: none;">
       <button id="reworkModeBtn" class="mode-btn rework active" onclick="switchMode('rework')">Rework</button>
@@ -348,7 +367,6 @@
     const database = firebase.database();
     const USER_EMAILS = { 'inspektor': 't.ludwiczak@samsung.com', 'status': 'tomasz.ludwiczakk@gmail.com' };
     
-    // Elementy DOM
     const loginScreen = document.getElementById("loginScreen");
     const appContent = document.getElementById("appContent");
     const currentUserSpan = document.getElementById("currentUser");
@@ -379,8 +397,11 @@
     const slot2Btn = document.getElementById("slot2Btn");
     const slot1Label = document.getElementById("slot1Label");
     const slot2Label = document.getElementById("slot2Label");
+    const slot1PhotoBtn = document.getElementById("slot1PhotoBtn");
+    const slot2PhotoBtn = document.getElementById("slot2PhotoBtn");
+    const statusPhotoModal = document.getElementById("statusPhotoModal");
+    const statusPhotoImg = document.getElementById("statusPhotoImg");
     
-    // Elementy statystyk
     const totalCountContainer = document.getElementById("totalCountContainer");
     const toScanContainer = document.getElementById("toScanContainer");
     const okContainer = document.getElementById("okContainer");
@@ -408,7 +429,6 @@
     const photoPreview = document.getElementById("photoPreview");
     const photoPreviewContainer = document.getElementById("photoPreviewContainer");
 
-    // Zmienne globalne dla dwóch slotów
     let reworkDataSlot1 = [];
     let reworkDataSlot2 = [];
     let scanDataSlot1 = [];
@@ -416,7 +436,7 @@
     let currentSort = { field: 'date', direction: 'desc' };
     let codeToRemove = null;
     let currentMode = 'rework';
-    let currentSlot = 1; // 1 lub 2
+    let currentSlot = 1;
     let tempCode = '';
     let isProcessing = false;
     let currentUser = null;
@@ -429,20 +449,17 @@
     let refreshInterval = null;
     let saveTimeout = null;
     
-    // Nazwy dla slotów
     let reworkModeNameSlot1 = '';
     let reworkModeNameSlot2 = '';
     let scanModeNameSlot1 = '';
     let scanModeNameSlot2 = '';
     
-    // Zdjęcia dla slotów
     let currentPhotoDataUrlSlot1 = null;
     let currentPhotoDataUrlSlot2 = null;
     let photoVisible = false;
     let savedInspectorSlot1 = '';
     let savedInspectorSlot2 = '';
 
-    // Funkcje pomocnicze - pobieranie danych dla aktywnego slotu
     function getReworkData() { return currentSlot === 1 ? reworkDataSlot1 : reworkDataSlot2; }
     function setReworkData(data) { if (currentSlot === 1) reworkDataSlot1 = data; else reworkDataSlot2 = data; }
     function getScanData() { return currentSlot === 1 ? scanDataSlot1 : scanDataSlot2; }
@@ -458,6 +475,55 @@
 
     function getCurrentModeName() { return currentMode === 'rework' ? getReworkModeName() : getScanModeName(); }
     function setCurrentModeName(name) { if (currentMode === 'rework') setReworkModeName(name); else setScanModeName(name); }
+
+    function getSlotName(slot) {
+      if (slot === 1) return reworkModeNameSlot1 || scanModeNameSlot1 || '';
+      return reworkModeNameSlot2 || scanModeNameSlot2 || '';
+    }
+
+    function getSlotPhotoUrl(slot) {
+      return slot === 1 ? currentPhotoDataUrlSlot1 : currentPhotoDataUrlSlot2;
+    }
+
+    function updateSlotLabels() {
+      const name1 = getSlotName(1);
+      const name2 = getSlotName(2);
+      
+      slot1Label.textContent = name1 || '';
+      slot1Label.className = 'slot-label' + (name1 ? ' has-name' : '');
+      
+      slot2Label.textContent = name2 || '';
+      slot2Label.className = 'slot-label' + (name2 ? ' has-name' : '');
+      
+      // Pokaż/ukryj przyciski podglądu zdjęcia
+      slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
+      slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
+      slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
+      slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
+      
+      if (userRole === 'status') {
+        currentReworkName1.textContent = reworkModeNameSlot1 || '-';
+        currentReworkName2.textContent = reworkModeNameSlot2 || '-';
+      }
+    }
+
+    function viewSlotPhoto(slot) {
+      const url = getSlotPhotoUrl(slot);
+      if (url) {
+        statusPhotoImg.src = url;
+        statusPhotoModal.classList.add('visible');
+      } else {
+        showMessage("Brak zdjęcia dla tego slotu", "info", 3000);
+      }
+    }
+
+    function closeStatusPhoto() {
+      statusPhotoModal.classList.remove('visible');
+    }
+
+    statusPhotoModal.addEventListener('click', function(e) {
+      if (e.target === statusPhotoModal) closeStatusPhoto();
+    });
 
     function showStatusPopup(status) {
       statusPopup.textContent = status;
@@ -512,6 +578,7 @@
         photoPreview.src = getCurrentPhotoDataUrl();
         cameraButton.classList.add('active');
         await savePhotoToFirebase();
+        updateSlotLabels();
         validateForm();
         showMessage("Zdjęcie dodane", "success", 5000);
         playFeedback('success');
@@ -538,6 +605,7 @@
       photoPreview.src = '';
       cameraButton.classList.remove('active');
       hidePhotoPreview();
+      updateSlotLabels();
       try { const user = auth.currentUser; if (user) { await database.ref(`photos/${user.uid}_slot${currentSlot}`).remove(); } } catch (e) { console.error("Błąd usuwania zdjęcia z Firebase:", e); }
     }
 
@@ -549,7 +617,6 @@
       try {
         const user = auth.currentUser;
         if (user) {
-          // Ładuj zdjęcia dla obu slotów
           for (const slot of [1, 2]) {
             const snapshot = await database.ref(`photos/${user.uid}_slot${slot}`).once('value');
             if (snapshot.exists()) {
@@ -560,8 +627,8 @@
               }
             }
           }
-          // Ustaw podgląd dla aktualnego slotu
           updatePhotoPreviewForCurrentSlot();
+          updateSlotLabels();
         }
       } catch (e) { console.error("Błąd odczytu zdjęcia z Firebase:", e); }
     }
@@ -595,7 +662,9 @@
         showMessage(msg, "error", 6000); playFeedback('error'); return;
       }
       if (userRole !== 'inspector') return;
-      isScanActive = true; scanInputWrapper.classList.add('active'); scanPlaceholder.textContent = '✏️ Skanuj kod...'; barcodeBuffer = ''; scanValue.textContent = ''; hiddenScanBuffer.focus(); showMessage(`Aktywne skanowanie - Slot ${currentSlot}`, "info", 5000);
+      isScanActive = true; scanInputWrapper.classList.add('active'); scanPlaceholder.textContent = '✏️ Skanuj kod...'; barcodeBuffer = ''; scanValue.textContent = ''; hiddenScanBuffer.focus();
+      const slotName = getSlotName(currentSlot);
+      showMessage(`Aktywne skanowanie - ${slotName || 'Slot ' + currentSlot}`, "info", 5000);
     }
 
     function deactivateScanning() {
@@ -636,8 +705,8 @@
           const matchedItem = reworkData.find(item => { if (!item || !item.code) return false; return item.code.substring(0, 14) === scannedCodePrefix; });
           if (!matchedItem) { showMessage("KOD NIE ZNAJDUJE SIĘ NA LIŚCIE!", "error", 6000); playFeedback('error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
           const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block';
-          if (matchedItem.status === "") { tempCode = matchedItem.code; currentStatusField = 'status'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible'); showMessage(`Kod znaleziony! Wybierz status (pierwszy skan): OK, NG lub OK/NG (Slot ${currentSlot})`, "info", 6000); setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50); }
-          else { tempCode = matchedItem.code; currentStatusField = 'statusAfterRework'; if (okNgBtn) okNgBtn.style.display = 'none'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible'); const firstStatus = matchedItem.status || "Nieznany"; const statusText = firstStatus === "OK" ? "OK" : (firstStatus === "NG" ? "NG" : firstStatus); message.className = "message repair-question"; message.textContent = `Kod znaleziony. Status: ${statusText}. Naprawiony? (Slot ${currentSlot})`; message.style.display = "block"; setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50); }
+          if (matchedItem.status === "") { tempCode = matchedItem.code; currentStatusField = 'status'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible'); showMessage(`Kod znaleziony! Wybierz status: OK, NG lub OK/NG`, "info", 6000); setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50); }
+          else { tempCode = matchedItem.code; currentStatusField = 'statusAfterRework'; if (okNgBtn) okNgBtn.style.display = 'none'; buttons.style.display = "flex"; document.body.classList.add('buttons-visible'); const firstStatus = matchedItem.status || "Nieznany"; const statusText = firstStatus === "OK" ? "OK" : (firstStatus === "NG" ? "NG" : firstStatus); message.className = "message repair-question"; message.textContent = `Kod znaleziony. Status: ${statusText}. Naprawiony?`; message.style.display = "block"; setTimeout(() => { const okBtn = document.querySelector('.btn-ok'); if (okBtn) okBtn.focus(); }, 50); }
         } else {
           const exists = scanData.some(item => item.code === code);
           if (exists) { showMessage("TEN KOD ZOSTAŁ JUŻ ZESKANOWANY!", "warning", 6000); playFeedback('error'); isProcessing = false; deactivateScanning(); setTimeout(() => activateScanning(), 500); return; }
@@ -654,7 +723,7 @@
       await saveScanDataToFirebase();
       showStatusPopup("OK");
       playFeedback('scan-success');
-      showMessage(`Kod zeskanowany! (Slot ${currentSlot})`, "success", 5000);
+      showMessage(`Kod zeskanowany!`, "success", 5000);
       renderTable(); updateStats(); isProcessing = false; scrollTableToTop();
       setTimeout(() => { if (validateForm()) { activateScanning(); } }, 500);
     }
@@ -664,12 +733,10 @@
       if (tableContainer) { tableContainer.scrollTop = 0; }
     }
 
-    // Firebase paths z uwzględnieniem slotu
     function getReworkDataPath() { return `reworkData_slot${currentSlot}`; }
     function getScanDataPath() { return `scanData_slot${currentSlot}`; }
     function getMetadataPath() { return `metadata_slot${currentSlot}`; }
 
-    // Funkcja do ładowania wszystkich danych (oba sloty)
     async function loadAllDataFromFirebase() {
       try {
         for (const slot of [1, 2]) {
@@ -699,8 +766,8 @@
             }
           }
         }
-        // Aktualizuj UI dla aktualnego slotu
         updateUIForCurrentSlot();
+        updateSlotLabels();
         if (userRole === 'status') {
           currentReworkName1.textContent = reworkModeNameSlot1 || '-';
           currentReworkName2.textContent = reworkModeNameSlot2 || '-';
@@ -719,6 +786,7 @@
       }
       renderTable();
       updateStats();
+      updateSlotLabels();
     }
 
     async function saveMetadataToFirebase() {
@@ -759,7 +827,6 @@
         const userCredential = await auth.signInWithEmailAndPassword(email, password); const user = userCredential.user;
         if (user.email === USER_EMAILS.inspektor) { userRole = 'inspector'; currentUser = 'inspektor'; } else if (user.email === USER_EMAILS.status) { userRole = 'status'; currentUser = 'status'; }
         currentUserSpan.textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1); loginScreen.style.display = 'none'; appContent.style.display = 'block';
-        // Wczytaj zapisane inspektorów z localStorage
         savedInspectorSlot1 = localStorage.getItem('inspector_slot1') || '';
         savedInspectorSlot2 = localStorage.getItem('inspector_slot2') || '';
         
@@ -790,6 +857,10 @@
           exportLink.style.display = 'inline';
           resetIcon.style.display = 'none';
           slotSelector.style.display = 'flex';
+          slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
+          slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
+          slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
+          slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
         }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') { debugBtn.style.display = 'block'; }
         sessionStorage.setItem('loggedIn', 'true'); sessionStorage.setItem('user', currentUser); sessionStorage.setItem('userRole', userRole);
@@ -819,11 +890,9 @@
       });
     }
 
-    // Przełączanie slotu
     async function switchSlot(slot) {
       if (slot === currentSlot) return;
       
-      // Zapisz aktualny stan przed przełączeniem
       if (userRole === 'inspector') {
         const val = reworkNameInput.value.trim();
         setCurrentModeName(val);
@@ -831,7 +900,6 @@
         localStorage.setItem(`inspector_slot${currentSlot}`, inspectorInput.value.trim());
       }
       
-      // Dezaktywuj skanowanie
       deactivateScanning();
       isProcessing = false;
       buttons.style.display = "none";
@@ -844,33 +912,33 @@
       
       currentSlot = slot;
       
-      // Aktualizuj przyciski slotów
       slot1Btn.classList.toggle('active', slot === 1);
       slot2Btn.classList.toggle('active', slot === 2);
       
-      // Aktualizuj UI
       updateUIForCurrentSlot();
       
-      // Jeśli status, odśwież nazwy
       if (userRole === 'status') {
         currentReworkName1.textContent = reworkModeNameSlot1 || '-';
         currentReworkName2.textContent = reworkModeNameSlot2 || '-';
         currentInspectorNames.textContent = getAllInspectorsFromRework();
         renderTable();
         updateStats();
+        slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
+        slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
+        slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
+        slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
       }
       
-      // Odśwież listenery Firebase dla nowego slotu
       if (userRole === 'inspector') {
         setupRealtimeListeners();
-        // Aktualizuj widoczność przycisku importu
         importLink.style.display = currentMode === 'rework' ? 'inline' : 'none';
         setTimeout(() => {
           if (validateForm()) activateScanning();
         }, 200);
       }
       
-      showMessage(`Przełączono na Slot ${slot}`, "info", 3000);
+      const slotName = getSlotName(slot);
+      showMessage(`Przełączono na ${slotName || 'Slot ' + slot}`, "info", 3000);
     }
 
     auth.onAuthStateChanged(async (user) => {
@@ -959,7 +1027,6 @@
         database.ref(`metadata_slot2`).off();
       }
       
-      // Nasłuchuj na oba sloty
       for (const slot of [1, 2]) {
         database.ref(`reworkData_slot${slot}`).on('value', (snapshot) => {
           if (snapshot.exists()) {
@@ -972,6 +1039,7 @@
           if (slot === currentSlot || userRole === 'status') {
             renderTable();
             updateStats();
+            updateSlotLabels();
           }
           if (userRole === 'status') {
             currentReworkName1.textContent = reworkModeNameSlot1 || '-';
@@ -1004,6 +1072,7 @@
                 reworkModeNameSlot2 = metadata.reworkName || '';
                 scanModeNameSlot2 = metadata.scanName || '';
               }
+              updateSlotLabels();
               if (userRole === 'status') {
                 currentReworkName1.textContent = reworkModeNameSlot1 || '-';
                 currentReworkName2.textContent = reworkModeNameSlot2 || '-';
@@ -1038,9 +1107,14 @@
             }
             renderTable();
             updateStats();
+            updateSlotLabels();
             currentReworkName1.textContent = reworkModeNameSlot1 || '-';
             currentReworkName2.textContent = reworkModeNameSlot2 || '-';
             currentInspectorNames.textContent = getAllInspectorsFromRework();
+            slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
+            slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
+            slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
+            slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
           } catch (error) { console.error('Błąd odświeżania danych:', error); }
         }
       }, 30000);
@@ -1053,27 +1127,26 @@
       inspectorControls.style.display = isInspector ? 'block' : 'none';
       statusInfo.style.display = isStatus ? 'block' : 'none';
       cameraButton.style.display = isInspector ? 'flex' : 'none';
-      slotSelector.style.display = 'flex'; // Zawsze pokazuj selektor slotów
+      slotSelector.style.display = 'flex';
       
-      // Aktualizuj etykiety slotów
-      if (isStatus) {
-        slot1Label.textContent = reworkModeNameSlot1 ? `Slot 1: ${reworkModeNameSlot1.substring(0, 15)}` : 'Slot 1';
-        slot2Label.textContent = reworkModeNameSlot2 ? `Slot 2: ${reworkModeNameSlot2.substring(0, 15)}` : 'Slot 2';
-      } else {
-        slot1Label.textContent = 'Slot 1';
-        slot2Label.textContent = 'Slot 2';
-      }
+      updateSlotLabels();
       
       if (isStatus) {
         actionHeader.style.display = 'none';
         document.querySelector('table thead').classList.add('status-mode');
         scanInputWrapper.style.display = 'none';
         photoPreviewContainer.style.display = 'none';
+        slot1PhotoBtn.style.display = currentPhotoDataUrlSlot1 ? 'flex' : 'none';
+        slot2PhotoBtn.style.display = currentPhotoDataUrlSlot2 ? 'flex' : 'none';
+        slot1PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot1);
+        slot2PhotoBtn.classList.toggle('has-photo', !!currentPhotoDataUrlSlot2);
       } else {
         actionHeader.style.display = '';
         document.querySelector('table thead').classList.remove('status-mode');
         validateForm();
         scanInputWrapper.style.display = 'block';
+        slot1PhotoBtn.style.display = 'none';
+        slot2PhotoBtn.style.display = 'none';
       }
       if (isInspector && currentMode === 'rework') { importLink.style.display = 'inline'; }
       else if (isInspector && currentMode === 'scan') { importLink.style.display = 'none'; }
@@ -1099,10 +1172,9 @@
         if (reworkNameInput.value.trim().length > 0) {
           setCurrentModeName(reworkNameInput.value.trim());
           await saveMetadataToFirebase();
+          updateSlotLabels();
           inspectorInput.focus();
           validateForm();
-          // Aktualizuj etykietę slotu
-          updateSlotLabels();
         }
       }
     }
@@ -1120,16 +1192,8 @@
       }
     }
 
-    function updateSlotLabels() {
-      if (userRole === 'status') {
-        slot1Label.textContent = reworkModeNameSlot1 ? `Slot 1: ${reworkModeNameSlot1.substring(0, 15)}` : 'Slot 1';
-        slot2Label.textContent = reworkModeNameSlot2 ? `Slot 2: ${reworkModeNameSlot2.substring(0, 15)}` : 'Slot 2';
-      }
-    }
-
     async function switchMode(mode) {
       if (userRole !== 'inspector') return;
-      // Zapisz aktualną nazwę
       if (currentMode === 'rework') setReworkModeName(reworkNameInput.value.trim());
       else setScanModeName(reworkNameInput.value.trim());
       
@@ -1143,6 +1207,7 @@
       importLink.style.display = mode === 'rework' ? 'inline' : 'none';
       
       await saveMetadataToFirebase();
+      updateSlotLabels();
       renderTable();
       updateStats();
       validateForm();
@@ -1210,7 +1275,8 @@
         await saveScanDataToFirebase();
       }
       
-      showMessage(`Zaimportowano ${codesFound} kodów (pominięto ${skippedRows}) do Slot ${currentSlot}`, "success", 5000);
+      const slotName = getSlotName(currentSlot);
+      showMessage(`Zaimportowano ${codesFound} kodów do ${slotName || 'Slot ' + currentSlot}`, "success", 5000);
       renderTable();
       updateStats();
       codeListSmall.value = '';
@@ -1299,7 +1365,7 @@
       const displayStatus = (status === "OK/NG") ? "OK/NG" : status;
       showStatusPopup(displayStatus);
       playFeedback('success');
-      showMessage(`Kod oznaczony jako ${status} (Slot ${currentSlot})`, "success", 5000);
+      showMessage(`Kod oznaczony jako ${status}`, "success", 5000);
       renderTable();
       updateStats();
       updateInspectorList();
@@ -1378,7 +1444,6 @@
         }
       }).join('');
       
-      // Oznacz wszystkie jako nie-nowe
       if (currentMode === 'rework') {
         const data = getReworkData();
         data.forEach(entry => { if (entry) entry.isNew = false; });
@@ -1472,9 +1537,10 @@
       if (userRole === 'status') { showMessage("Tryb podglądu - edycja zablokowana", "error", 5000); return; }
       codeToRemove = code;
       const title = currentMode === 'rework' ? "Resetowanie statusu" : "Usuwanie kodu";
+      const slotName = getSlotName(currentSlot);
       const msg = currentMode === 'rework'
-        ? `Czy na pewno chcesz zresetować status tego kodu (pierwszy i po reworku)? (Slot ${currentSlot})`
-        : `Czy na pewno chcesz trwale usunąć ten kod z listy? (Slot ${currentSlot})`;
+        ? `Czy na pewno chcesz zresetować status tego kodu? (${slotName || 'Slot ' + currentSlot})`
+        : `Czy na pewno chcesz trwale usunąć ten kod z listy? (${slotName || 'Slot ' + currentSlot})`;
       showCustomConfirm(title, msg, confirmRemoval);
     };
 
@@ -1489,7 +1555,7 @@
           reworkData[codeIndex] = { ...reworkData[codeIndex], status: "", statusAfterRework: "", inspector: "", note: "", timestamp: null, isNew: false };
           setReworkData(reworkData);
           await saveReworkDataToFirebase();
-          showMessage(`Zresetowano statusy kodu (Slot ${currentSlot})`, "success", 5000);
+          showMessage(`Zresetowano statusy kodu`, "success", 5000);
           success = true;
         }
       } else {
@@ -1499,7 +1565,7 @@
           scanData.splice(codeIndex, 1);
           setScanData(scanData);
           await saveScanDataToFirebase();
-          showMessage(`Usunięto kod (Slot ${currentSlot})`, "success", 5000);
+          showMessage(`Usunięto kod`, "success", 5000);
           success = true;
         }
       }
@@ -1523,6 +1589,7 @@
       const currentData = currentMode === 'rework' || userRole === 'status' ? getReworkData() : getScanData();
       if (currentData.length === 0) { showMessage("Brak danych do eksportu", "error", 5000); return; }
       
+      const slotName = getSlotName(currentSlot);
       const name = userRole === 'status'
         ? (currentSlot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2)
         : getCurrentModeName() || (currentMode === 'rework' ? 'rework' : 'scan');
@@ -1537,7 +1604,7 @@
       
       if (currentMode === 'rework' || userRole === 'status') {
         const headerData = [
-          [`Nazwa: ${name || 'Brak danych'} (Slot ${currentSlot})`],
+          [`Nazwa: ${name || 'Brak danych'} (${slotName || 'Slot ' + currentSlot})`],
           [`Inspektorzy: ${inspector || 'Brak danych'}`],
           [`Data eksportu: ${new Date().toLocaleString()}`],
           [`Tryb: Rework`],
@@ -1581,7 +1648,8 @@
 
     async function resetAll() {
       if (userRole === 'status') { showMessage("Tryb podglądu - reset zablokowany", "error", 5000); return; }
-      showCustomConfirm("UWAGA! Reset danych", `Czy na pewno chcesz wyczyścić WSZYSTKIE dane i usunąć zdjęcie w bieżącym trybie? (Slot ${currentSlot}). Tej operacji nie można cofnąć.`, async () => {
+      const slotName = getSlotName(currentSlot);
+      showCustomConfirm("UWAGA! Reset danych", `Czy na pewno chcesz wyczyścić WSZYSTKIE dane i usunąć zdjęcie? (${slotName || 'Slot ' + currentSlot}). Tej operacji nie można cofnąć.`, async () => {
         if (currentMode === 'rework') {
           setReworkData([]);
           await saveReworkDataToFirebase();
@@ -1592,7 +1660,7 @@
         await clearPhoto();
         renderTable();
         updateStats();
-        showMessage(`Wyczyszczono wszystkie dane i usunięto zdjęcie (Slot ${currentSlot})`, "success", 5000);
+        showMessage(`Wyczyszczono wszystkie dane i usunięto zdjęcie`, "success", 5000);
         updateInspectorList();
         validateForm();
       });
@@ -1618,22 +1686,15 @@
       console.log("Rework data slot 2 count:", reworkDataSlot2.length);
       console.log("Scan data slot 1 count:", scanDataSlot1.length);
       console.log("Scan data slot 2 count:", scanDataSlot2.length);
-      console.log("isProcessing:", isProcessing);
-      console.log("isScanActive:", isScanActive);
-      console.log("Form valid:", validateForm());
-      console.log("Inspector slot 1:", savedInspectorSlot1);
-      console.log("Inspector slot 2:", savedInspectorSlot2);
       console.log("reworkModeNameSlot1:", reworkModeNameSlot1);
       console.log("reworkModeNameSlot2:", reworkModeNameSlot2);
       console.log("scanModeNameSlot1:", scanModeNameSlot1);
       console.log("scanModeNameSlot2:", scanModeNameSlot2);
       console.log("Photo slot 1 present:", !!currentPhotoDataUrlSlot1);
       console.log("Photo slot 2 present:", !!currentPhotoDataUrlSlot2);
-      console.log("Sort:", currentSort.field, currentSort.direction);
       console.log("==================");
     }
 
-    // Event listeners
     document.getElementById('loginPassword').addEventListener('keydown', function(e) { if (e.key === 'Enter') login(); });
     
     document.addEventListener('keydown', function(e) {
@@ -1687,7 +1748,6 @@
       resetIcon.addEventListener('click', resetAll);
       codeListSmall.addEventListener('change', handleFileImport);
       reworkNameInput.placeholder = currentMode === 'rework' ? 'Nazwa reworku*' : 'Nazwa skanu*';
-      // Inicjalizuj selektor slotów
       slot1Btn.classList.add('active');
       slot2Btn.classList.remove('active');
       updateSlotLabels();
