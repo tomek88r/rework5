@@ -56,7 +56,6 @@
     .login-btn:active { transform: scale(0.98); }
     .login-error { color: #dc3545; text-align: center; margin: 8px 0; min-height: 18px; font-size: 12px; }
 
-    /* Slot selector - wyśrodkowany */
     .slot-selector { display: flex; margin: 6px auto; gap: 8px; align-items: center; justify-content: center; padding: 4px 0; }
     .slot-btn { width: 38px; height: 32px; border-radius: 6px; border: 2px solid #e0e0e0; background: white; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .slot-btn.slot1.active { border-color: #007acc; background: #e6f2ff; color: #007acc; }
@@ -156,7 +155,6 @@
     #cameraInput { display: none; }
     .required-indicator { color: #dc3545; font-weight: bold; }
     
-    /* Status info bar */
     .status-info-bar { background: #e8f5e9; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11px; }
     .status-info-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
     .status-info-left .status-info-item { white-space: nowrap; }
@@ -485,6 +483,15 @@
       return reworkModeNameSlot2 || scanModeNameSlot2 || '';
     }
 
+    function getInspectorsForSlot(slot) {
+      const reworkData = slot === 1 ? reworkDataSlot1 : reworkDataSlot2;
+      const scanData = slot === 1 ? scanDataSlot1 : scanDataSlot2;
+      const inspectors = new Set();
+      reworkData.forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } });
+      scanData.forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } });
+      return Array.from(inspectors).sort().join(', ') || '-';
+    }
+
     function updateSlotLabels() {
       const name1 = getSlotName(1);
       const name2 = getSlotName(2);
@@ -502,9 +509,10 @@
       if (userRole !== 'status') return;
       
       const slotName = getSlotName(currentSlot);
+      const slotInspectors = getInspectorsForSlot(currentSlot);
       statusSlotLabel.textContent = `Slot ${currentSlot}:`;
       currentReworkName.textContent = slotName || '-';
-      currentInspectorNames.textContent = getAllInspectorsFromRework();
+      currentInspectorNames.textContent = slotInspectors;
       
       const photoUrl = getCurrentPhotoDataUrl();
       if (statusPhotoBtn) {
@@ -535,12 +543,6 @@
       statusPopup.textContent = status;
       statusPopup.className = 'status-popup ' + (status === 'OK' ? 'ok' : 'ng') + ' show';
       setTimeout(() => { statusPopup.classList.remove('show'); }, 1500);
-    }
-
-    function getAllInspectorsFromRework() {
-      const inspectors = new Set();
-      [...reworkDataSlot1, ...reworkDataSlot2].forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } });
-      return Array.from(inspectors).sort().join(', ') || '-';
     }
 
     function selectUserType(type) {
@@ -1037,6 +1039,9 @@
           if (slot === currentSlot && currentMode === 'scan') {
             renderTable();
             updateStats();
+          }
+          if (userRole === 'status' && slot === currentSlot) {
+            updateSlotLabels();
           }
         });
         
@@ -1536,12 +1541,6 @@
       }
     }
 
-    function getAllInspectorsFromData(data) {
-      const inspectors = new Set();
-      data.forEach(item => { if (item.inspector && item.inspector.trim() !== '') { inspectors.add(item.inspector.trim()); } });
-      return Array.from(inspectors).sort().join(', ') || 'nieznany';
-    }
-
     async function exportToExcel() {
       const currentData = currentMode === 'rework' || userRole === 'status' ? getReworkData() : getScanData();
       if (currentData.length === 0) { showMessage("Brak danych do eksportu", "error", 5000); return; }
@@ -1551,8 +1550,8 @@
         ? (currentSlot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2)
         : getCurrentModeName() || (currentMode === 'rework' ? 'rework' : 'scan');
       const inspector = userRole === 'status'
-        ? getAllInspectorsFromRework()
-        : (currentMode === 'rework' ? getAllInspectorsFromData(getReworkData()) : inspectorInput.value.trim() || 'nieznany');
+        ? getInspectorsForSlot(currentSlot)
+        : (currentMode === 'rework' ? getInspectorsForSlot(currentSlot) : inspectorInput.value.trim() || 'nieznany');
       const dateStr = new Date().toISOString().slice(0, 10);
       const safeName = name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
       const safeInspector = inspector.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
@@ -1649,6 +1648,8 @@
       console.log("scanModeNameSlot2:", scanModeNameSlot2);
       console.log("Photo slot 1 present:", !!currentPhotoDataUrlSlot1);
       console.log("Photo slot 2 present:", !!currentPhotoDataUrlSlot2);
+      console.log("Inspectors slot 1:", getInspectorsForSlot(1));
+      console.log("Inspectors slot 2:", getInspectorsForSlot(2));
       console.log("==================");
     }
 
