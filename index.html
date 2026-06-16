@@ -286,7 +286,7 @@
     <main id="mainContent">
       <div id="inspectorControls" style="display: none;">
         <div class="input-row-compact">
-          <input id="rework-name" placeholder="Nazwa reworku*" onkeydown="handleReworkNameKeyDown(event)" oninput="validateForm()" />
+          <input id="rework-name" placeholder="Nazwa*" onkeydown="handleReworkNameKeyDown(event)" oninput="validateForm()" />
           <input id="inspector" placeholder="Inspektor*" onkeydown="handleInspectorKeyDown(event)" oninput="validateForm()" />
           <button class="camera-btn" id="cameraButton" onclick="handleCameraButtonClick()" title="Dodaj zdjęcie">📷</button>
           <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleCameraCapture(event)" />
@@ -431,6 +431,7 @@
     const photoPreview = document.getElementById("photoPreview");
     const photoPreviewContainer = document.getElementById("photoPreviewContainer");
 
+    // Dane dla slotów - rework i scan oddzielnie
     let reworkDataSlot1 = [];
     let reworkDataSlot2 = [];
     let scanDataSlot1 = [];
@@ -451,13 +452,20 @@
     let refreshInterval = null;
     let saveTimeout = null;
     
+    // Nazwy dla trybu rework (osobno dla każdego slotu)
     let reworkModeNameSlot1 = '';
     let reworkModeNameSlot2 = '';
+    // Nazwy dla trybu scan (osobno dla każdego slotu)
     let scanModeNameSlot1 = '';
     let scanModeNameSlot2 = '';
     
-    let currentPhotoDataUrlSlot1 = null;
-    let currentPhotoDataUrlSlot2 = null;
+    // Zdjęcia dla trybu rework (osobno dla każdego slotu)
+    let reworkPhotoSlot1 = null;
+    let reworkPhotoSlot2 = null;
+    // Zdjęcia dla trybu scan (osobno dla każdego slotu)
+    let scanPhotoSlot1 = null;
+    let scanPhotoSlot2 = null;
+    
     let photoVisible = false;
     let savedInspectorSlot1 = '';
     let savedInspectorSlot2 = '';
@@ -466,36 +474,49 @@
     function setReworkData(data) { if (currentSlot === 1) reworkDataSlot1 = data; else reworkDataSlot2 = data; }
     function getScanData() { return currentSlot === 1 ? scanDataSlot1 : scanDataSlot2; }
     function setScanData(data) { if (currentSlot === 1) scanDataSlot1 = data; else scanDataSlot2 = data; }
-    function getReworkModeName() { return currentSlot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2; }
-    function setReworkModeName(name) { if (currentSlot === 1) reworkModeNameSlot1 = name; else reworkModeNameSlot2 = name; }
-    function getScanModeName() { return currentSlot === 1 ? scanModeNameSlot1 : scanModeNameSlot2; }
-    function setScanModeName(name) { if (currentSlot === 1) scanModeNameSlot1 = name; else scanModeNameSlot2 = name; }
-    function getCurrentPhotoDataUrl() { return currentSlot === 1 ? currentPhotoDataUrlSlot1 : currentPhotoDataUrlSlot2; }
-    function setCurrentPhotoDataUrl(url) { if (currentSlot === 1) currentPhotoDataUrlSlot1 = url; else currentPhotoDataUrlSlot2 = url; }
+    
+    function getCurrentModeName() { 
+      if (currentMode === 'rework') return currentSlot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2;
+      return currentSlot === 1 ? scanModeNameSlot1 : scanModeNameSlot2;
+    }
+    function setCurrentModeName(name) { 
+      if (currentMode === 'rework') {
+        if (currentSlot === 1) reworkModeNameSlot1 = name; else reworkModeNameSlot2 = name;
+      } else {
+        if (currentSlot === 1) scanModeNameSlot1 = name; else scanModeNameSlot2 = name;
+      }
+    }
+    
+    function getCurrentPhotoDataUrl() { 
+      if (currentMode === 'rework') return currentSlot === 1 ? reworkPhotoSlot1 : reworkPhotoSlot2;
+      return currentSlot === 1 ? scanPhotoSlot1 : scanPhotoSlot2;
+    }
+    function setCurrentPhotoDataUrl(url) { 
+      if (currentMode === 'rework') {
+        if (currentSlot === 1) reworkPhotoSlot1 = url; else reworkPhotoSlot2 = url;
+      } else {
+        if (currentSlot === 1) scanPhotoSlot1 = url; else scanPhotoSlot2 = url;
+      }
+    }
+    
     function getSavedInspector() { return currentSlot === 1 ? savedInspectorSlot1 : savedInspectorSlot2; }
     function setSavedInspector(val) { if (currentSlot === 1) savedInspectorSlot1 = val; else savedInspectorSlot2 = val; }
 
-    function getCurrentModeName() { return currentMode === 'rework' ? getReworkModeName() : getScanModeName(); }
-    function setCurrentModeName(name) { if (currentMode === 'rework') setReworkModeName(name); else setScanModeName(name); }
-
     function getSlotName(slot) {
-      if (slot === 1) return reworkModeNameSlot1 || scanModeNameSlot1 || '';
-      return reworkModeNameSlot2 || scanModeNameSlot2 || '';
+      // W trybie inspektor pokazuj nazwę dla aktualnego trybu
+      // W trybie status pokazuj tylko nazwę reworku
+      if (userRole === 'status') {
+        return slot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2;
+      }
+      if (currentMode === 'rework') return slot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2;
+      return slot === 1 ? scanModeNameSlot1 : scanModeNameSlot2;
     }
 
     function getActiveInspectorsForSlot(slot) {
+      // W trybie status pokazuj inspektorów tylko z reworku
       const reworkData = slot === 1 ? reworkDataSlot1 : reworkDataSlot2;
-      const scanData = slot === 1 ? scanDataSlot1 : scanDataSlot2;
       const inspectors = new Set();
-      
       reworkData.forEach(item => { 
-        const itemStatus = item.status || '';
-        const itemInspector = (item.inspector || '').trim();
-        if (itemInspector !== '' && (itemStatus === 'OK' || itemStatus === 'NG')) { 
-          inspectors.add(itemInspector); 
-        }
-      });
-      scanData.forEach(item => { 
         const itemStatus = item.status || '';
         const itemInspector = (item.inspector || '').trim();
         if (itemInspector !== '' && (itemStatus === 'OK' || itemStatus === 'NG')) { 
@@ -528,7 +549,8 @@
       currentReworkName.textContent = slotName || '-';
       currentInspectorNames.textContent = slotInspectors;
       
-      const photoUrl = getCurrentPhotoDataUrl();
+      // W trybie status pokazuj zdjęcie tylko z trybu rework
+      const photoUrl = currentSlot === 1 ? reworkPhotoSlot1 : reworkPhotoSlot2;
       if (statusPhotoBtn) {
         statusPhotoBtn.style.display = photoUrl ? 'flex' : 'none';
         statusPhotoBtn.classList.toggle('has-photo', !!photoUrl);
@@ -536,7 +558,8 @@
     }
 
     function viewCurrentSlotPhoto() {
-      const url = getCurrentPhotoDataUrl();
+      // W trybie status pokazuj zdjęcie tylko z trybu rework
+      const url = currentSlot === 1 ? reworkPhotoSlot1 : reworkPhotoSlot2;
       if (url) {
         statusPhotoImg.src = url;
         statusPhotoModal.classList.add('visible');
@@ -562,9 +585,8 @@
     function selectUserType(type) {
       selectedUserType = type;
       document.querySelectorAll('.user-type-btn').forEach(btn => { btn.classList.remove('active'); if (btn.dataset.type === type) btn.classList.add('active'); });
-      const passwordField = document.getElementById('loginPassword');
-      passwordField.placeholder = `Hasło dla ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-      passwordField.value = ''; loginError.textContent = '';
+      document.getElementById('loginPassword').placeholder = `Hasło dla ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      document.getElementById('loginPassword').value = ''; loginError.textContent = '';
     }
 
     function initNoKeyboardScanning() {
@@ -627,31 +649,47 @@
       cameraButton.classList.remove('active');
       hidePhotoPreview();
       updateSlotLabels();
-      try { const user = auth.currentUser; if (user) { await database.ref(`photos/${user.uid}_slot${currentSlot}`).remove(); } } catch (e) { console.error("Błąd usuwania zdjęcia z Firebase:", e); }
+      try { const user = auth.currentUser; if (user) { await database.ref(`photos/${user.uid}_${currentMode}_slot${currentSlot}`).remove(); } } catch (e) { console.error("Błąd usuwania zdjęcia:", e); }
     }
 
     async function savePhotoToFirebase() {
-      try { const user = auth.currentUser; if (user && getCurrentPhotoDataUrl()) { await database.ref(`photos/${user.uid}_slot${currentSlot}`).set({ photoDataUrl: getCurrentPhotoDataUrl(), timestamp: Date.now() }); } } catch (e) { console.error("Błąd zapisu zdjęcia do Firebase:", e); }
+      try { 
+        const user = auth.currentUser; 
+        if (user && getCurrentPhotoDataUrl()) { 
+          await database.ref(`photos/${user.uid}_${currentMode}_slot${currentSlot}`).set({ 
+            photoDataUrl: getCurrentPhotoDataUrl(), 
+            timestamp: Date.now() 
+          }); 
+        } 
+      } catch (e) { console.error("Błąd zapisu zdjęcia:", e); }
     }
 
     async function loadPhotoFromFirebase() {
       try {
         const user = auth.currentUser;
         if (user) {
+          // Ładuj zdjęcia dla obu slotów i obu trybów
           for (const slot of [1, 2]) {
-            const snapshot = await database.ref(`photos/${user.uid}_slot${slot}`).once('value');
-            if (snapshot.exists()) {
-              const photoData = snapshot.val();
-              if (photoData && photoData.photoDataUrl) {
-                if (slot === 1) currentPhotoDataUrlSlot1 = photoData.photoDataUrl;
-                else currentPhotoDataUrlSlot2 = photoData.photoDataUrl;
+            for (const mode of ['rework', 'scan']) {
+              const snapshot = await database.ref(`photos/${user.uid}_${mode}_slot${slot}`).once('value');
+              if (snapshot.exists()) {
+                const photoData = snapshot.val();
+                if (photoData && photoData.photoDataUrl) {
+                  if (mode === 'rework') {
+                    if (slot === 1) reworkPhotoSlot1 = photoData.photoDataUrl;
+                    else reworkPhotoSlot2 = photoData.photoDataUrl;
+                  } else {
+                    if (slot === 1) scanPhotoSlot1 = photoData.photoDataUrl;
+                    else scanPhotoSlot2 = photoData.photoDataUrl;
+                  }
+                }
               }
             }
           }
           updatePhotoPreviewForCurrentSlot();
           updateSlotLabels();
         }
-      } catch (e) { console.error("Błąd odczytu zdjęcia z Firebase:", e); }
+      } catch (e) { console.error("Błąd odczytu zdjęcia:", e); }
     }
 
     function updatePhotoPreviewForCurrentSlot() {
@@ -679,7 +717,7 @@
 
     function activateScanning() {
       if (!validateForm()) {
-        let msg = ""; if (reworkNameInput.value.trim().length === 0) msg = "Wprowadź nazwę reworku"; else if (inspectorInput.value.trim().length < 3) msg = "Wprowadź nazwisko inspektora (min. 3 znaki)"; else if (!getCurrentPhotoDataUrl()) msg = "Dodaj zdjęcie przed skanowaniem";
+        let msg = ""; if (reworkNameInput.value.trim().length === 0) msg = "Wprowadź nazwę"; else if (inspectorInput.value.trim().length < 3) msg = "Wprowadź nazwisko inspektora (min. 3 znaki)"; else if (!getCurrentPhotoDataUrl()) msg = "Dodaj zdjęcie przed skanowaniem";
         showMessage(msg, "error", 6000); playFeedback('error'); return;
       }
       if (userRole !== 'inspector') return;
@@ -769,8 +807,8 @@
 
           const scanRef = database.ref(`scanData_slot${slot}`);
           const scanSnapshot = await scanRef.once('value');
-          const scanData = scanSnapshot.exists() ? scanSnapshot.val() : [];
-          if (slot === 1) scanDataSlot1 = scanData; else scanDataSlot2 = scanData;
+          if (slot === 1) scanDataSlot1 = scanSnapshot.exists() ? scanSnapshot.val() : [];
+          else scanDataSlot2 = scanSnapshot.exists() ? scanSnapshot.val() : [];
 
           const metadataRef = database.ref(`metadata_slot${slot}`);
           const metadataSnapshot = await metadataRef.once('value');
@@ -796,6 +834,7 @@
     function updateUIForCurrentSlot() {
       if (userRole === 'inspector') {
         reworkNameInput.value = getCurrentModeName();
+        reworkNameInput.placeholder = currentMode === 'rework' ? 'Nazwa reworku*' : 'Nazwa skanu*';
         inspectorInput.value = getSavedInspector();
         updatePhotoPreviewForCurrentSlot();
         validateForm();
@@ -809,8 +848,8 @@
     async function saveMetadataToFirebase() {
       try {
         const metadata = {
-          reworkName: currentMode === 'rework' ? getReworkModeName() : (getReworkModeName() || ''),
-          scanName: currentMode === 'scan' ? getScanModeName() : (getScanModeName() || ''),
+          reworkName: currentSlot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2,
+          scanName: currentSlot === 1 ? scanModeNameSlot1 : scanModeNameSlot2,
           lastUpdate: Date.now(),
           mode: currentMode,
           user: currentUser,
@@ -885,12 +924,11 @@
         try {
           await auth.signOut();
           if (firebaseListenerActive) {
-            database.ref(`reworkData_slot1`).off();
-            database.ref(`reworkData_slot2`).off();
-            database.ref(`scanData_slot1`).off();
-            database.ref(`scanData_slot2`).off();
-            database.ref(`metadata_slot1`).off();
-            database.ref(`metadata_slot2`).off();
+            for (const slot of [1, 2]) {
+              database.ref(`reworkData_slot${slot}`).off();
+              database.ref(`scanData_slot${slot}`).off();
+              database.ref(`metadata_slot${slot}`).off();
+            }
             firebaseListenerActive = false;
           }
           if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
@@ -933,9 +971,7 @@
       if (userRole === 'inspector') {
         setupRealtimeListeners();
         importLink.style.display = currentMode === 'rework' ? 'inline' : 'none';
-        setTimeout(() => {
-          if (validateForm()) activateScanning();
-        }, 200);
+        setTimeout(() => { if (validateForm()) activateScanning(); }, 200);
       }
       
       const slotName = getSlotName(slot);
@@ -1020,12 +1056,11 @@
 
     function setupRealtimeListeners() {
       if (firebaseListenerActive) {
-        database.ref(`reworkData_slot1`).off();
-        database.ref(`reworkData_slot2`).off();
-        database.ref(`scanData_slot1`).off();
-        database.ref(`scanData_slot2`).off();
-        database.ref(`metadata_slot1`).off();
-        database.ref(`metadata_slot2`).off();
+        for (const slot of [1, 2]) {
+          database.ref(`reworkData_slot${slot}`).off();
+          database.ref(`scanData_slot${slot}`).off();
+          database.ref(`metadata_slot${slot}`).off();
+        }
       }
       
       for (const slot of [1, 2]) {
@@ -1075,11 +1110,9 @@
             }
           } else {
             if (slot === 1) {
-              reworkModeNameSlot1 = '';
-              scanModeNameSlot1 = '';
+              reworkModeNameSlot1 = ''; scanModeNameSlot1 = '';
             } else {
-              reworkModeNameSlot2 = '';
-              scanModeNameSlot2 = '';
+              reworkModeNameSlot2 = ''; scanModeNameSlot2 = '';
             }
             updateSlotLabels();
           }
@@ -1104,11 +1137,6 @@
                 if (slot === 1) reworkDataSlot1 = []; else reworkDataSlot2 = [];
               }
               
-              const scanRef = database.ref(`scanData_slot${slot}`);
-              const scanSnapshot = await scanRef.once('value');
-              if (slot === 1) scanDataSlot1 = scanSnapshot.exists() ? scanSnapshot.val() : [];
-              else scanDataSlot2 = scanSnapshot.exists() ? scanSnapshot.val() : [];
-
               const metadataRef = database.ref(`metadata_slot${slot}`);
               const metadataSnapshot = await metadataRef.once('value');
               if (metadataSnapshot.exists()) {
@@ -1123,19 +1151,14 @@
                   }
                 }
               } else {
-                if (slot === 1) {
-                  reworkModeNameSlot1 = '';
-                  scanModeNameSlot1 = '';
-                } else {
-                  reworkModeNameSlot2 = '';
-                  scanModeNameSlot2 = '';
-                }
+                if (slot === 1) { reworkModeNameSlot1 = ''; scanModeNameSlot1 = ''; }
+                else { reworkModeNameSlot2 = ''; scanModeNameSlot2 = ''; }
               }
             }
             renderTable();
             updateStats();
             updateSlotLabels();
-          } catch (error) { console.error('Błąd odświeżania danych:', error); }
+          } catch (error) { console.error('Błąd odświeżania:', error); }
         }
       }, 30000);
     }
@@ -1203,17 +1226,21 @@
 
     async function switchMode(mode) {
       if (userRole !== 'inspector') return;
-      if (currentMode === 'rework') setReworkModeName(reworkNameInput.value.trim());
-      else setScanModeName(reworkNameInput.value.trim());
+      
+      // Zapisz aktualną nazwę przed przełączeniem
+      setCurrentModeName(reworkNameInput.value.trim());
       
       currentMode = mode;
       reworkModeBtn.classList.toggle('active', mode === 'rework');
       scanModeBtn.classList.toggle('active', mode === 'scan');
       mainContent.classList.toggle('scan-mode', mode === 'scan');
       
-      reworkNameInput.placeholder = mode === 'rework' ? 'Nazwa reworku*' : 'Nazwa skanu*';
       reworkNameInput.value = getCurrentModeName();
+      reworkNameInput.placeholder = mode === 'rework' ? 'Nazwa reworku*' : 'Nazwa skanu*';
       importLink.style.display = mode === 'rework' ? 'inline' : 'none';
+      
+      // Aktualizuj podgląd zdjęcia dla nowego trybu
+      updatePhotoPreviewForCurrentSlot();
       
       await saveMetadataToFirebase();
       updateSlotLabels();
@@ -1286,8 +1313,7 @@
       
       const slotName = getSlotName(currentSlot);
       showMessage(`Zaimportowano ${codesFound} kodów do ${slotName || 'Slot ' + currentSlot}`, "success", 5000);
-      renderTable();
-      updateStats();
+      renderTable(); updateStats();
       codeListSmall.value = '';
       updateSlotLabels();
       scrollTableToTop();
@@ -1310,19 +1336,11 @@
         noteInput.focus();
         showMessage("Wpisz adnotację i naciśnij Enter", "info", 6000);
         const handleNoteKeyDown = (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            const note = noteInput.value.trim();
-            saveEntry(status, note);
-            noteInput.removeEventListener("keydown", handleNoteKeyDown);
-          }
+          if (e.key === "Enter") { e.preventDefault(); const note = noteInput.value.trim(); saveEntry(status, note); noteInput.removeEventListener("keydown", handleNoteKeyDown); }
         };
         noteInput.addEventListener("keydown", handleNoteKeyDown);
-      } else if (status === "OK/NG") {
-        saveEntry("OK/NG", "");
-      } else {
-        saveEntry(status, "");
-      }
+      } else if (status === "OK/NG") { saveEntry("OK/NG", ""); }
+      else { saveEntry(status, ""); }
     }
 
     async function saveEntry(status, note) {
@@ -1375,16 +1393,15 @@
       showStatusPopup(displayStatus);
       playFeedback('success');
       showMessage(`Kod oznaczony jako ${status}`, "success", 5000);
-      renderTable();
-      updateStats();
-      updateSlotLabels();
+      renderTable(); updateStats(); updateSlotLabels();
       isProcessing = false;
       scrollTableToTop();
       setTimeout(() => { if (validateForm()) { activateScanning(); } }, 500);
     }
 
     function renderTable() {
-      const currentData = currentMode === 'rework' ? getReworkData() : getScanData();
+      // W trybie status pokazuj tylko dane z reworku
+      const currentData = userRole === 'status' ? getReworkData() : (currentMode === 'rework' ? getReworkData() : getScanData());
       let sortedData = [...currentData];
       
       sortedData.sort((a, b) => {
@@ -1418,13 +1435,14 @@
         return currentSort.direction === 'asc' ? compareResult : -compareResult;
       });
       
-      const displayData = currentMode === 'scan'
+      // W trybie scan filtruj tylko zeskanowane
+      const displayData = (currentMode === 'scan' && userRole !== 'status')
         ? sortedData.filter(item => item.status !== "" && item.status !== "Nie zeskanowano")
         : sortedData;
       
       list.innerHTML = displayData.map(entry => {
         let statusText = entry.status;
-        if (currentMode === 'scan' && statusText === "OK") { statusText = ""; }
+        if (currentMode === 'scan' && userRole !== 'status' && statusText === "OK") { statusText = ""; }
         else if (statusText === "") { statusText = ""; }
         
         let statusAfterText = entry.statusAfterRework || "";
@@ -1457,7 +1475,7 @@
         const data = getReworkData();
         data.forEach(entry => { if (entry) entry.isNew = false; });
         setReworkData(data);
-      } else {
+      } else if (currentMode === 'scan') {
         const data = getScanData();
         data.forEach(entry => { if (entry) entry.isNew = false; });
         setScanData(data);
@@ -1485,10 +1503,11 @@
     }
 
     function updateStats() {
-      const reworkData = getReworkData();
+      // W trybie status pokazuj statystyki tylko z reworku
+      const reworkData = userRole === 'status' ? getReworkData() : getReworkData();
       const scanData = getScanData();
       
-      if (currentMode === 'rework') {
+      if (currentMode === 'rework' || userRole === 'status') {
         const total = reworkData.length;
         const scanned = reworkData.filter(entry => entry.status === "OK" || entry.status === "NG").length;
         const toScan = total - scanned;
@@ -1580,8 +1599,7 @@
       }
       
       if (success) {
-        renderTable();
-        updateStats();
+        renderTable(); updateStats();
         codeToRemove = null;
         updateSlotLabels();
         if (validateForm()) { setTimeout(() => activateScanning(), 100); }
@@ -1593,16 +1611,14 @@
       if (currentData.length === 0) { showMessage("Brak danych do eksportu", "error", 5000); return; }
       
       const slotName = getSlotName(currentSlot);
-      const name = userRole === 'status'
-        ? (currentSlot === 1 ? reworkModeNameSlot1 : reworkModeNameSlot2)
-        : getCurrentModeName() || (currentMode === 'rework' ? 'rework' : 'scan');
+      const name = getSlotName(currentSlot) || (currentMode === 'rework' ? 'rework' : 'scan');
       const inspector = userRole === 'status'
         ? getActiveInspectorsForSlot(currentSlot)
         : (currentMode === 'rework' ? getActiveInspectorsForSlot(currentSlot) : inspectorInput.value.trim() || 'nieznany');
       const dateStr = new Date().toISOString().slice(0, 10);
       const safeName = name.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
       const safeInspector = inspector.replace(/[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, '_');
-      const fileName = `${safeName}_${safeInspector}_${dateStr}_slot${currentSlot}.xlsx`;
+      const fileName = `${safeName}_${safeInspector}_${dateStr}_${currentMode}_slot${currentSlot}.xlsx`;
       const wb = XLSX.utils.book_new();
       
       if (currentMode === 'rework' || userRole === 'status') {
@@ -1610,8 +1626,7 @@
           [`Nazwa: ${name || 'Brak danych'} (${slotName || 'Slot ' + currentSlot})`],
           [`Inspektorzy: ${inspector || 'Brak danych'}`],
           [`Data eksportu: ${new Date().toLocaleString()}`],
-          [`Tryb: Rework`],
-          [],
+          [`Tryb: Rework`], [],
           ["Kod", "Status", "Status po reworku", "Inspektor", "Adnotacja", "Data"]
         ];
         const wsData = [...headerData, ...currentData.map(entry => [
@@ -1619,12 +1634,7 @@
           entry.note, entry.timestamp?new Date(entry.timestamp).toLocaleString():""
         ])];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
-        if (!ws['!merges']) ws['!merges'] = [];
-        ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } });
-        ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: 5 } });
-        ws['!merges'].push({ s: { r: 2, c: 0 }, e: { r: 2, c: 5 } });
-        ws['!merges'].push({ s: { r: 3, c: 0 }, e: { r: 3, c: 5 } });
-        ws['!merges'].push({ s: { r: 4, c: 0 }, e: { r: 4, c: 5 } });
+        for (let i = 0; i < 5; i++) { if (!ws['!merges']) ws['!merges'] = []; ws['!merges'].push({ s: { r: i, c: 0 }, e: { r: i, c: 5 } }); }
         XLSX.utils.book_append_sheet(wb, ws, "Skanowanie");
       } else {
         const exportData = currentData.filter(item => item.status !== "" && item.status !== "Nie zeskanowano").map(item => [item.code]);
@@ -1637,13 +1647,10 @@
       const photoUrl = getCurrentPhotoDataUrl();
       if (photoUrl && (currentMode === 'rework' || userRole === 'status')) {
         try {
-          const photoFileName = `${safeName}_${safeInspector}_${dateStr}_slot${currentSlot}_zdjecie.png`;
+          const photoFileName = `${safeName}_${safeInspector}_${dateStr}_${currentMode}_slot${currentSlot}_zdjecie.png`;
           const link = document.createElement('a');
-          link.href = photoUrl;
-          link.download = photoFileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          link.href = photoUrl; link.download = photoFileName;
+          document.body.appendChild(link); link.click(); document.body.removeChild(link);
           showMessage("Wyeksportowano Excel i zdjęcie", "success", 5000);
         } catch (e) { console.error("Błąd eksportu zdjęcia:", e); }
       }
@@ -1663,8 +1670,7 @@
         setCurrentModeName('');
         await saveMetadataToFirebase();
         await clearPhoto();
-        renderTable();
-        updateStats();
+        renderTable(); updateStats();
         showMessage(`Wyczyszczono wszystkie dane i usunięto zdjęcie`, "success", 5000);
         updateSlotLabels();
         validateForm();
@@ -1672,10 +1678,8 @@
     }
 
     function showMessage(msg, type = "info", duration = 5000) {
-      message.className = "message";
-      message.classList.add(type);
-      message.textContent = msg;
-      message.style.display = "block";
+      message.className = "message"; message.classList.add(type);
+      message.textContent = msg; message.style.display = "block";
       if (duration > 0) {
         clearTimeout(message._timeout);
         message._timeout = setTimeout(() => { message.textContent = ""; message.className = "message"; message.style.display = "none"; }, duration);
@@ -1683,26 +1687,22 @@
     }
 
     function debugData() {
-      console.log("=== DEBUG DANE ===");
-      console.log("Tryb:", currentMode);
-      console.log("Slot:", currentSlot);
-      console.log("User role:", userRole);
-      console.log("reworkModeNameSlot1:", reworkModeNameSlot1);
-      console.log("reworkModeNameSlot2:", reworkModeNameSlot2);
-      console.log("Active inspectors slot 1:", getActiveInspectorsForSlot(1));
-      console.log("Active inspectors slot 2:", getActiveInspectorsForSlot(2));
-      console.log("==================");
+      console.log("=== DEBUG ===");
+      console.log("Tryb:", currentMode, "Slot:", currentSlot);
+      console.log("reworkName1:", reworkModeNameSlot1, "reworkName2:", reworkModeNameSlot2);
+      console.log("scanName1:", scanModeNameSlot1, "scanName2:", scanModeNameSlot2);
+      console.log("reworkPhoto1:", !!reworkPhotoSlot1, "reworkPhoto2:", !!reworkPhotoSlot2);
+      console.log("scanPhoto1:", !!scanPhotoSlot1, "scanPhoto2:", !!scanPhotoSlot2);
+      console.log("Active insp slot1:", getActiveInspectorsForSlot(1));
+      console.log("Active insp slot2:", getActiveInspectorsForSlot(2));
     }
 
     document.getElementById('loginPassword').addEventListener('keydown', function(e) { if (e.key === 'Enter') login(); });
     
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape' && buttons.style.display === 'flex') {
-        buttons.style.display = 'none';
-        document.body.classList.remove('buttons-visible');
-        noteInput.style.display = 'none';
-        tempCode = '';
-        isProcessing = false;
+        buttons.style.display = 'none'; document.body.classList.remove('buttons-visible');
+        noteInput.style.display = 'none'; tempCode = ''; isProcessing = false;
         message.className = "message"; message.style.display = "none";
         const okNgBtn = document.querySelector('.btn-ok-ng'); if (okNgBtn) okNgBtn.style.display = 'block';
         showMessage("Anulowano", "info", 5000);
@@ -1728,16 +1728,10 @@
       }
     });
     
-    inspectorInput.addEventListener('blur', function() {
-      if (validateForm()) { setTimeout(() => activateScanning(), 100); }
-    });
+    inspectorInput.addEventListener('blur', function() { if (validateForm()) { setTimeout(() => activateScanning(), 100); } });
     
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then(registration => {
-          console.log('Service Worker zarejestrowany:', registration.scope);
-        }).catch(error => { console.log('Błąd rejestracji Service Workera:', error); });
-      });
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(error => { console.log('SW error:', error); }); });
     }
     
     window.onload = function() {
@@ -1746,9 +1740,7 @@
       exportLink.addEventListener('click', exportToExcel);
       resetIcon.addEventListener('click', resetAll);
       codeListSmall.addEventListener('change', handleFileImport);
-      reworkNameInput.placeholder = currentMode === 'rework' ? 'Nazwa reworku*' : 'Nazwa skanu*';
-      slot1Btn.classList.add('active');
-      slot2Btn.classList.remove('active');
+      slot1Btn.classList.add('active'); slot2Btn.classList.remove('active');
       updateSlotLabels();
       setTimeout(() => { document.getElementById('loginPassword')?.focus(); }, 500);
     };
